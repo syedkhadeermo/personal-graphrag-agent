@@ -1,0 +1,38 @@
+services:
+  graphrag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: personal-graphrag-agent:local
+    container_name: personal-graphrag-agent
+
+    restart: unless-stopped
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      GRAPH_RAG_JOB_WORKERS: "2"
+      GRAPH_RAG_POLL_TIMEOUT: "0.5"
+      GRAPH_RAG_RECOVER_ON_START: "true"
+      GRAPH_RAG_STALE_AFTER_SECONDS: "0"
+
+    volumes:
+      - ./data:/app/data
+      - ${USERPROFILE}/.ssh:/ssh-host:ro
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen(
+          'http://127.0.0.1:8000/health',
+          timeout=3)
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3

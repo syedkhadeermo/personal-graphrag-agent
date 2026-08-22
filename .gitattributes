@@ -1,0 +1,18 @@
+* text=auto
+
+# Cross-platform source and configuration
+*.py text eol=lf
+*.sh text eol=lf
+*.sql text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+Dockerfile text eol=lf
+
+# OpenFOAM dictionaries and field files must remain Linux-friendly
+demos/cad_flow_channel/openfoam/** text eol=lf
+
+# Binary portfolio media
+*.gif binary
+*.png binary
+*.jpg binary
+*.jpeg binary

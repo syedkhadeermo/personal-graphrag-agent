@@ -1,0 +1,97 @@
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+# Redundant archives and accidental local files
+*.zip
+*.mdp
+appagentartifacts__init__.py
+# Environment files, credentials, and certificates
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+credentials.json
+secrets.json
+token.json
+id_rsa
+id_ed25519
+
+# Private knowledge, embeddings, databases, and operational state
+data/**
+!data/public/
+data/public/**
+!data/public/cad_simulation/
+!data/public/cad_simulation/cfd.md
+!data/public/cybersecurity/
+!data/public/cybersecurity/security.md
+
+# Explicit protection for downloaded/cloned third-party docking material
+data/public/docking_test/
+
+# Generated demo artifacts; selected portfolio media will go in docs/assets
+demos/**/artifacts/
+demos/**/animation_frames/
+*.FCStd
+*.FCBak
+*.step
+*.stp
+*.blend
+*.mp4
+
+# Scientific runtime outputs
+*.cpt
+*.edr
+*.gro
+*.trr
+*.xtc
+*.tpr
+*.dcd
+*.nc
+*.log
+
+# Models and research datasets
+*.h5
+*.h5ad
+*.pkl
+*.pickle
+*.joblib
+*.onnx
+*.pt
+*.pth
+
+# Local inspection files and private inventories
+current_*.txt
+Pasted*.txt
+private_knowledge_inventory.txt
+
+# Coverage and test output
+.coverage
+htmlcov/
+coverage.xml
+junit.xml
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*.orig
+*~
