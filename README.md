@@ -84,7 +84,7 @@ The demo source is under `demos/cad_flow_channel/`. Generated frames, native CAD
 
 ### Defensive cybersecurity
 
-The optional cybersecurity domain demonstrates bounded defensive automation rather than penetration testing. It:
+The cybersecurity domain demonstrates bounded defensive automation rather than penetration testing. It:
 
 - Requires explicit authorization
 - Accepts one private or loopback IP address
