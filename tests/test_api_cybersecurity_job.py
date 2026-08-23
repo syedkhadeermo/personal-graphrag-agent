@@ -247,8 +247,13 @@ def main() -> None:
             isolated_runtime.stop()
 
         api_main.runtime = original_runtime
+        api_main.app.state.runtime = original_runtime
         print(f"Temporary test data: {temporary_root}")
 
 
 if __name__ == "__main__":
+    main()
+
+
+def test_main() -> None:
     main()
