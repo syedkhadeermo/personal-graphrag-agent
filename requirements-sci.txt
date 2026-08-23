@@ -1,0 +1,6 @@
+-r requirements.txt
+
+# Heavy optional ADMET execution stack. The core API can route ADMET jobs
+# to an environment or worker that has these packages installed.
+torch==2.8.0
+admet-ai==2.0.1
