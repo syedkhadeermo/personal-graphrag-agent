@@ -1,5 +1,8 @@
 # Personal GraphRAG Scientific Computing Agent
 
+[![CI](https://github.com/syedkhadeermo/personal-graphrag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/syedkhadeermo/personal-graphrag-agent/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A portfolio-grade, multi-domain GraphRAG system that combines private knowledge retrieval, curated knowledge-graph traversal, named-agent delegation, persistent asynchronous jobs, and local or remote scientific tools.
 
 The project demonstrates one orchestration layer across three domains:
@@ -123,8 +126,14 @@ POST /jobs
 Start locally:
 
 ```bash
+export GRAPH_RAG_API_KEY="replace-with-a-long-random-value"
 uvicorn app.api.main:app --host 0.0.0.0 --port 8000
 ```
+
+Job endpoints accept the key in the `X-API-Key` header. Health and capability
+discovery remain public. If `GRAPH_RAG_API_KEY` is unset, authentication is
+disabled for local/personal development. CORS defaults to local UI origins;
+set `GRAPH_RAG_CORS_ORIGINS` to a comma-separated allowlist when needed.
 
 Useful endpoints:
 
@@ -171,13 +180,36 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
+Install the optional ADMET-AI/PyTorch execution stack only where that workload
+will run:
+
+```cmd
+python -m pip install -r requirements-sci.txt
+```
+
+For development and CI tooling:
+
+```cmd
+python -m pip install -r requirements-dev.txt
+```
+
 Run the test suite:
 
 ```cmd
 python -m pytest -q
 ```
 
-Selected integration tests can also be executed directly with `runpy`, which keeps their printed verification reports visible.
+This collects the complete suite and runs portable tests, while clearly
+reporting environment-dependent tests as skipped. Run tests that require local
+Ollama models, private knowledge files, WSL scientific environments, or the SSH
+Mini-PC only from a configured workstation:
+
+```cmd
+python -m pytest -q --run-external
+```
+
+Script-style integration tests can still be executed directly with `runpy`,
+which keeps their printed verification reports visible.
 
 ## Knowledge and privacy
 
