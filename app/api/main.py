@@ -1,12 +1,17 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+import hmac
+import os
 
 from fastapi import (
+    Depends,
     FastAPI,
+    Header,
     HTTPException,
     Request,
     status,
 )
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.runtime import ApiRuntime
 
@@ -21,7 +26,7 @@ APP_NAME = (
     "Personal GraphRAG Scientific Computing API"
 )
 
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.4.1"
 
 
 runtime = ApiRuntime.create_default()
@@ -60,6 +65,40 @@ app = FastAPI(
     ),
     lifespan=lifespan,
 )
+
+
+def _allowed_origins() -> list[str]:
+    configured = os.getenv(
+        "GRAPH_RAG_CORS_ORIGINS",
+        "http://127.0.0.1:3000,http://localhost:3000",
+    )
+    return [origin.strip() for origin in configured.split(",") if origin.strip()]
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allowed_origins(),
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "X-API-Key"],
+)
+
+
+def require_api_key(
+    x_api_key: str | None = Header(default=None),
+) -> None:
+    """Protect job data when GRAPH_RAG_API_KEY is configured."""
+
+    expected = os.getenv("GRAPH_RAG_API_KEY", "").strip()
+    if not expected:
+        return
+
+    if x_api_key is None or not hmac.compare_digest(x_api_key, expected):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="A valid X-API-Key header is required.",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
 
 # Read-only discovery remains available to in-process clients
 # that do not enter the lifespan context.
@@ -187,6 +226,7 @@ def list_agents(
 def submit_job(
     submission: JobSubmissionRequest,
     request: Request,
+    _: None = Depends(require_api_key),
 ) -> JobSubmissionResponse:
     """
     Validate, delegate, durably queue, and asynchronously
@@ -315,6 +355,7 @@ def submit_job(
 def get_job(
     job_id: str,
     request: Request,
+    _: None = Depends(require_api_key),
 ) -> dict:
     """
     Return the durable SQLite state for one job.
