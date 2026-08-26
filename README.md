@@ -24,6 +24,7 @@ The project demonstrates one orchestration layer across three domains:
 - Worker capability registration and health-aware workload routing
 - SHA-256 artifact validation and manifest registration
 - Local Windows, WSL and remote Windows/WSL execution adapters
+- Provider-neutral generation through Ollama, OpenAI, Anthropic or Gemini
 - FastAPI discovery, submission and job-status endpoints
 - Dockerized local execution for portable tools such as RDKit
 - Defensive scope validation for the optional cybersecurity domain
@@ -171,6 +172,40 @@ Requirements:
 - ChromaDB
 - Optional WSL scientific environments for RDKit, ADMET-AI and GROMACS
 - Optional SSH-accessible worker for FreeCAD, OpenFOAM and Blender
+
+### Generation providers
+
+Ollama remains the default and requires no cloud credentials:
+
+```bash
+export GENERATION_PROVIDER="ollama"
+export OLLAMA_GENERATION_MODEL="deepseek-coder:6.7b"
+```
+
+To use a cloud model for grounded answer generation, select one provider and
+set its API key and model name:
+
+```bash
+# OpenAI
+export GENERATION_PROVIDER="openai"
+export OPENAI_API_KEY="..."
+export OPENAI_MODEL="your-openai-model"
+
+# Anthropic ("claude" is also accepted as the provider name)
+export GENERATION_PROVIDER="anthropic"
+export ANTHROPIC_API_KEY="..."
+export ANTHROPIC_MODEL="your-anthropic-model"
+
+# Google Gemini ("google" is also accepted as the provider name)
+export GENERATION_PROVIDER="gemini"
+export GEMINI_API_KEY="..."
+export GEMINI_MODEL="your-gemini-model"
+```
+
+`GENERATION_MODEL` can replace the provider-specific model variable. API keys
+are read only from the environment and must not be committed. This abstraction
+changes grounded text generation only; ingestion and retrieval still use the
+local Ollama embedding model, so existing Chroma collections remain compatible.
 
 Windows setup:
 

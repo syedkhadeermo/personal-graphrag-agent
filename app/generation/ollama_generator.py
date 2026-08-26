@@ -1,5 +1,7 @@
 from ollama import Client
 
+from app.generation.provider import grounded_prompt
+
 
 class OllamaGenerator:
     """Generate strictly context-grounded answers using Ollama."""
@@ -14,50 +16,23 @@ class OllamaGenerator:
 
     def generate(self, question: str, context: str) -> str:
         """Generate an answer using only the supplied context."""
-
-        if not question or not question.strip():
-            raise ValueError("Question cannot be empty.")
-
-        if not context or not context.strip():
-            raise ValueError("Context cannot be empty.")
-
-        prompt = f"""
-You are a strict evidence-based question answering system.
-
-Your ONLY source of factual information is the CONTEXT below.
-
-RULES:
-- Every factual statement in your answer must be directly supported
-  by the CONTEXT.
-- Do NOT use your pretrained knowledge.
-- Do NOT expand, interpret, explain, or infer beyond the CONTEXT.
-- Do NOT introduce terminology that is absent from the CONTEXT unless
-  it is necessary to repeat the user's question.
-- Do NOT provide examples that are not in the CONTEXT.
-- Do NOT add mechanisms, methods, results, numbers, or technical details
-  that are not explicitly stated in the CONTEXT.
-- If the CONTEXT does not explicitly answer the question, respond exactly:
-
-"The available knowledge base does not contain enough information
-to answer this question."
-
-CONTEXT:
-{context}
-
-QUESTION:
-{question}
-
-Return only the answer.
-"""
-
-        response = self.client.chat(
-            model=self.model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
+        return self.chat(
+            [{"role": "user", "content": grounded_prompt(question, context)}]
         )
 
+    def chat(
+        self,
+        messages,
+        *,
+        temperature: float = 0.0,
+        max_tokens: int | None = None,
+    ) -> str:
+        options = {"temperature": temperature}
+        if max_tokens is not None:
+            options["num_predict"] = max_tokens
+        response = self.client.chat(
+            model=self.model,
+            messages=list(messages),
+            options=options,
+        )
         return response["message"]["content"].strip()

@@ -1,6 +1,7 @@
 from typing import Any
 
-from app.generation.ollama_generator import OllamaGenerator
+from app.generation.provider import GenerationProvider
+from app.generation.provider_factory import create_generation_provider
 from app.knowledge_graph.graph_store import KnowledgeGraphStore
 from app.retrieval.retrieval_service import RetrievalService
 
@@ -315,7 +316,7 @@ class GraphRAGService:
         self,
         retrieval_service: RetrievalService | None = None,
         graph_store: KnowledgeGraphStore | None = None,
-        generator: OllamaGenerator | None = None,
+        generator: GenerationProvider | None = None,
     ):
         self.retrieval = (
             retrieval_service
@@ -329,7 +330,7 @@ class GraphRAGService:
 
         self.generator = (
             generator
-            or OllamaGenerator()
+            or create_generation_provider()
         )
 
     def answer(

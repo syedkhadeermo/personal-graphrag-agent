@@ -1,8 +1,8 @@
 import re
 from typing import Any
 
-from ollama import Client
-
+from app.generation.provider import GenerationProvider
+from app.generation.provider_factory import create_generation_provider
 from app.retrieval.retrieval_service import RetrievalService
 from app.vectorstore.chroma_store import ChromaVectorStore
 
@@ -56,8 +56,9 @@ class KnowledgeAnswerService:
     def __init__(
         self,
         retrieval_service: RetrievalService | None = None,
-        model: str = "deepseek-coder:6.7b",
-        host: str = "http://localhost:11434",
+        model: str | None = None,
+        host: str | None = None,
+        generator: GenerationProvider | None = None,
         n_results: int = 8,
         evidence_limit: int = 4,
     ):
@@ -84,8 +85,10 @@ class KnowledgeAnswerService:
             )
 
         self.retrieval_service = retrieval_service
-        self.model = model
-        self.client = Client(host=host)
+        self.generator = generator or create_generation_provider(
+            model=model,
+            host=host,
+        )
 
         self.n_results = n_results
         self.evidence_limit = evidence_limit
@@ -418,8 +421,7 @@ RETRIEVED AND RERANKED EVIDENCE:
 Answer the exact question.
 """
 
-        response = self.client.chat(
-            model=self.model,
+        answer_text = self.generator.chat(
             messages=[
                 {
                     "role": "system",
@@ -430,18 +432,8 @@ Answer the exact question.
                     "content": user_prompt,
                 },
             ],
-            options={
-                "temperature": 0.0,
-                "num_predict": 220,
-            },
-        )
-
-        answer_text = (
-            response[
-                "message"
-            ][
-                "content"
-            ].strip()
+            temperature=0.0,
+            max_tokens=220,
         )
 
         return {

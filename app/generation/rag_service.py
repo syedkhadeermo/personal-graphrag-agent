@@ -1,15 +1,20 @@
 from app.embeddings.ollama_embeddings import OllamaEmbeddingService
 from app.retrieval.retrieval_service import RetrievalService
-from app.generation.ollama_generator import OllamaGenerator
+from app.generation.provider import GenerationProvider
+from app.generation.provider_factory import create_generation_provider
 
 
 class RAGService:
     """End-to-end retrieval-augmented generation service."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        retrieval_service: RetrievalService | None = None,
+        generator: GenerationProvider | None = None,
+    ):
         self.embedding_service = OllamaEmbeddingService()
-        self.retrieval_service = RetrievalService()
-        self.generator = OllamaGenerator()
+        self.retrieval_service = retrieval_service or RetrievalService()
+        self.generator = generator or create_generation_provider()
 
     def answer(
         self,
