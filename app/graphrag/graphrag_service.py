@@ -12,10 +12,12 @@ class GraphRAGService:
 
     Graph traversal is seeded from:
         - retrieved tool metadata
+        - trusted source identifiers
         - entities explicitly mentioned in the question
         - workflow language such as candidate or workflow
 
-    It does not add every graph edge from the selected domain.
+    Retrieved prose is not scanned for seeds because distractor chunks can
+    mention unrelated entities and cause graph-context fan-out.
     """
 
     _TOOL_NODE_MAP = {
@@ -47,6 +49,29 @@ class GraphRAGService:
             "blender",
     }
 
+    _SOURCE_NODE_MAP = {
+        "rdkit_getting_started": (
+            "rdkit",
+        ),
+        "vina_basic_docking": (
+            "autodock_vina",
+        ),
+        "vina_python_docking": (
+            "autodock_vina",
+        ),
+        "gromacs_commands": (
+            "gromacs",
+        ),
+        "gromacs_rms": (
+            "gromacs",
+            "rmsd",
+        ),
+        "gromacs_rmsf": (
+            "gromacs",
+            "rmsf",
+        ),
+    }
+
     _QUESTION_ENTITY_ALIASES = {
         "candidate_molecule": (
             "candidate molecule",
@@ -68,12 +93,10 @@ class GraphRAGService:
         "admet_ai_v2": (
             "admet-ai v2",
             "admet ai v2",
-            "version 2",
         ),
         "admet_ai_v1": (
             "admet-ai v1",
             "admet ai v1",
-            "version 1",
         ),
         "chemprop": (
             "chemprop",
@@ -542,29 +565,19 @@ class GraphRAGService:
                         mapped_node
                     )
 
-            text_lower = str(
-                chunk.get(
-                    "text",
+            source_id = str(
+                metadata.get(
+                    "source_id",
                     "",
                 )
-            ).lower()
+            ).strip().lower()
 
-            for (
-                node_id,
-                aliases,
-            ) in (
-                self
-                ._QUESTION_ENTITY_ALIASES
-                .items()
-            ):
-
-                if any(
-                    alias in text_lower
-                    for alias in aliases
-                ):
-                    candidates.add(
-                        node_id
-                    )
+            candidates.update(
+                self._SOURCE_NODE_MAP.get(
+                    source_id,
+                    (),
+                )
+            )
 
         valid_nodes = []
 
@@ -610,6 +623,9 @@ class GraphRAGService:
         """
         Traverse outward from relevant seed nodes and return
         unique, domain-safe relationships.
+
+        A seed with no outgoing relationships is treated as a terminal node:
+        step once to its parents, then resume bounded outward traversal.
         """
 
         graph_context = []
@@ -624,6 +640,12 @@ class GraphRAGService:
                     direction="outgoing",
                 )
             )
+
+            if not relations:
+                relations = self._traverse_terminal_seed(
+                    seed_node=seed_node,
+                    max_depth=max_depth,
+                )
 
             for relation in relations:
 
@@ -663,6 +685,50 @@ class GraphRAGService:
         )
 
         return graph_context
+
+    def _traverse_terminal_seed(
+        self,
+        seed_node: str,
+        max_depth: int,
+    ) -> list[dict]:
+        """Step back from a terminal seed, then continue outward."""
+
+        results = []
+        seen_edges = set()
+
+        for incoming in self.graph.get_incoming(seed_node):
+            incoming_edge = dict(incoming)
+            incoming_edge["depth"] = 1
+            edge_key = (
+                incoming_edge["source"],
+                incoming_edge["relation"],
+                incoming_edge["target"],
+            )
+            seen_edges.add(edge_key)
+            results.append(incoming_edge)
+
+            if max_depth == 1:
+                continue
+
+            outward = self.graph.traverse(
+                start_node=incoming_edge["source"],
+                max_depth=max_depth - 1,
+                direction="outgoing",
+            )
+            for relation in outward:
+                edge_key = (
+                    relation["source"],
+                    relation["relation"],
+                    relation["target"],
+                )
+                if edge_key in seen_edges:
+                    continue
+                adjusted = dict(relation)
+                adjusted["depth"] = relation.get("depth", 0) + 1
+                seen_edges.add(edge_key)
+                results.append(adjusted)
+
+        return results
 
     def _edge_matches_domain(
         self,
@@ -817,4 +883,3 @@ class GraphRAGService:
             )
 
         return sources
-

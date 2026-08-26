@@ -1,0 +1,38 @@
+[
+  {
+    "source_id": "rdkit_getting_started",
+    "title": "Getting Started with the RDKit in Python",
+    "publisher": "RDKit",
+    "url": "https://www.rdkit.org/docs/GettingStartedInPython.html"
+  },
+  {
+    "source_id": "vina_basic_docking",
+    "title": "Basic docking",
+    "publisher": "AutoDock Vina",
+    "url": "https://autodock-vina.readthedocs.io/en/latest/docking_basic.html"
+  },
+  {
+    "source_id": "vina_python_docking",
+    "title": "Python scripting",
+    "publisher": "AutoDock Vina",
+    "url": "https://autodock-vina.readthedocs.io/en/latest/docking_python.html"
+  },
+  {
+    "source_id": "gromacs_rms",
+    "title": "gmx rms",
+    "publisher": "GROMACS",
+    "url": "https://manual.gromacs.org/current/onlinehelp/gmx-rms.html"
+  },
+  {
+    "source_id": "gromacs_rmsf",
+    "title": "gmx rmsf",
+    "publisher": "GROMACS",
+    "url": "https://manual.gromacs.org/current/onlinehelp/gmx-rmsf.html"
+  },
+  {
+    "source_id": "gromacs_commands",
+    "title": "Command-line reference",
+    "publisher": "GROMACS",
+    "url": "https://manual.gromacs.org/current/user-guide/cmdline.html"
+  }
+]

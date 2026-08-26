@@ -95,3 +95,5 @@ desktop.ini
 *.bak
 *.orig
 *~
+evaluation/public_graphrag/runtime/
+evaluation/public_graphrag/results/

@@ -1,0 +1,133 @@
+[
+  {
+    "question_id": "direct_rdkit_01",
+    "category": "direct",
+    "question": "According to the RDKit documentation, what Python function parses a SMILES string into a molecule, and what indicates parsing failure?",
+    "gold_source_ids": ["rdkit_getting_started"],
+    "claims": [
+      {
+        "claim_id": "rdkit_parser",
+        "term_groups": [["molfromsmiles"], ["smiles"]]
+      },
+      {
+        "claim_id": "rdkit_failure",
+        "term_groups": [["none", "null"], ["fail", "invalid", "parse"]]
+      }
+    ]
+  },
+  {
+    "question_id": "direct_vina_01",
+    "category": "direct",
+    "question": "What is AutoDock Vina's default exhaustiveness in the basic docking tutorial, and what change is suggested for a more consistent result?",
+    "gold_source_ids": ["vina_basic_docking"],
+    "claims": [
+      {
+        "claim_id": "vina_default_exhaustiveness",
+        "term_groups": [["exhaustiveness"], ["default"], ["8"]]
+      },
+      {
+        "claim_id": "vina_consistency_setting",
+        "term_groups": [["32"], ["consistent", "consistency"]]
+      }
+    ]
+  },
+  {
+    "question_id": "direct_gromacs_01",
+    "category": "direct",
+    "question": "How do gmx rms and gmx rmsf differ in what they calculate?",
+    "gold_source_ids": ["gromacs_rms", "gromacs_rmsf"],
+    "claims": [
+      {
+        "claim_id": "rms_definition",
+        "term_groups": [["gmx rms"], ["deviation", "rmsd"], ["reference"]]
+      },
+      {
+        "claim_id": "rmsf_definition",
+        "term_groups": [["gmx rmsf"], ["fluctuation", "rmsf"], ["atomic positions", "trajectory"]]
+      }
+    ]
+  },
+  {
+    "question_id": "cross_source_01",
+    "category": "cross_source",
+    "question": "After AutoDock Vina stores ranked docking poses, which GROMACS analyses can examine structural deviation and atomic fluctuation during a trajectory?",
+    "gold_source_ids": [
+      "vina_python_docking",
+      "gromacs_rms",
+      "gromacs_rmsf"
+    ],
+    "claims": [
+      {
+        "claim_id": "vina_ranked_poses",
+        "term_groups": [["pose"], ["rank", "score"], ["pdbqt"]]
+      },
+      {
+        "claim_id": "gromacs_rms_analysis",
+        "term_groups": [["gmx rms"], ["deviation", "rmsd"]]
+      },
+      {
+        "claim_id": "gromacs_rmsf_analysis",
+        "term_groups": [["gmx rmsf"], ["fluctuation", "rmsf"]]
+      }
+    ]
+  },
+  {
+    "question_id": "cross_source_02",
+    "category": "cross_source",
+    "question": "Which documented GROMACS commands cover RMSD, RMSF, radius of gyration, and hydrogen-bond analysis?",
+    "gold_source_ids": [
+      "gromacs_rms",
+      "gromacs_rmsf",
+      "gromacs_commands"
+    ],
+    "claims": [
+      {
+        "claim_id": "command_rms",
+        "term_groups": [["gmx rms"], ["rmsd", "deviation"]]
+      },
+      {
+        "claim_id": "command_rmsf",
+        "term_groups": [["gmx rmsf"], ["rmsf", "fluctuation"]]
+      },
+      {
+        "claim_id": "command_gyrate",
+        "term_groups": [["gmx gyrate"], ["radius of gyration"]]
+      },
+      {
+        "claim_id": "command_hbond",
+        "term_groups": [["gmx hbond"], ["hydrogen bond", "hydrogen bonds"]]
+      }
+    ]
+  },
+  {
+    "question_id": "boundary_01",
+    "category": "boundary",
+    "question": "Does the cited documentation establish that a low Vina score guarantees a dynamically stable protein-ligand complex? State only what the sources support.",
+    "gold_source_ids": [
+      "vina_basic_docking",
+      "gromacs_rms",
+      "gromacs_rmsf"
+    ],
+    "claims": [
+      {
+        "claim_id": "no_guarantee",
+        "term_groups": [
+          ["does not", "not", "no"],
+          [
+            "guarantee",
+            "establish",
+            "enough information",
+            "insufficient information",
+            "cannot establish",
+            "does not demonstrate",
+            "no evidence"
+          ]
+        ]
+      },
+      {
+        "claim_id": "separate_analyses",
+        "term_groups": [["docking", "vina"], ["rmsd", "rmsf", "trajectory"]]
+      }
+    ]
+  }
+]
