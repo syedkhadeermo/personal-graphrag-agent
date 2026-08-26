@@ -268,6 +268,7 @@ def answer_with_graph(
         n_results=len(chunks),
         visibility="public",
         graph_max_depth=graph_max_depth,
+        retrieval_mode="graph",
     )
     return result, dict(generator.last_metrics)
 

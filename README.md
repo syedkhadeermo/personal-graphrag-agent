@@ -99,7 +99,14 @@ It performs no exploitation, authentication attempts, banner collection, passwor
 
 ## GraphRAG behavior
 
-Retrieval results seed relevant graph nodes before traversal. This keeps graph context focused. For example:
+Questions use conservative conditional retrieval. Direct documentation questions
+use Vector RAG, while workflow, relationship, and scientific-boundary questions
+can add bounded graph context. Callers may explicitly select `auto`, `vector`, or
+`graph`; every response records the requested mode, selected mode, confidence,
+routing signals, and recognized question entities.
+
+When graph retrieval is selected, retrieval results seed relevant graph nodes
+before traversal. This keeps graph context focused. For example:
 
 - An ADMET question traverses ADMET-AI, Chemprop, DILI, hERG, toxicity and cardiotoxicity relationships.
 - A docking workflow question traverses molecular docking, docking pose, protein-ligand complex, molecular dynamics, GROMACS, RMSD and RMSF relationships.

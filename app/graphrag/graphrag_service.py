@@ -2,6 +2,7 @@ from typing import Any
 
 from app.generation.provider import GenerationProvider
 from app.generation.provider_factory import create_generation_provider
+from app.graphrag.retrieval_router import RetrievalMode, RetrievalRouter
 from app.knowledge_graph.graph_store import KnowledgeGraphStore
 from app.retrieval.retrieval_service import RetrievalService
 
@@ -333,6 +334,10 @@ class GraphRAGService:
             or create_generation_provider()
         )
 
+        self.router = RetrievalRouter(
+            self._QUESTION_ENTITY_ALIASES
+        )
+
     def answer(
         self,
         question: str,
@@ -345,6 +350,7 @@ class GraphRAGService:
         document_type: str | None = None,
         source: str | None = None,
         graph_max_depth: int = 3,
+        retrieval_mode: RetrievalMode = "auto",
     ) -> dict:
         """
         Answer a question using retrieved text and graph context.
@@ -359,6 +365,11 @@ class GraphRAGService:
             raise ValueError(
                 "graph_max_depth must be greater than zero."
             )
+
+        routing = self.router.route(
+            question=question,
+            requested_mode=retrieval_mode,
+        )
 
         retrieval_kwargs: dict[
             str,
@@ -411,28 +422,36 @@ class GraphRAGService:
                 "retrieved_chunks": [],
                 "graph_seed_nodes": [],
                 "graph_context": [],
+                "retrieval_mode_requested": routing.requested_mode,
+                "retrieval_mode_used": routing.selected_mode,
+                "routing_confidence": routing.confidence,
+                "routing_signals": list(routing.signals),
+                "routing_entity_nodes": list(routing.entity_nodes),
                 "sources": [],
             }
 
-        graph_seed_nodes = (
-            self._identify_seed_nodes(
-                question=question,
-                retrieved_chunks=(
-                    retrieved_chunks
-                ),
-                domain=domain,
-            )
-        )
+        graph_seed_nodes = []
+        graph_context = []
 
-        graph_context = (
-            self._collect_graph_context(
-                seed_nodes=graph_seed_nodes,
-                domain=domain,
-                max_depth=(
-                    graph_max_depth
-                ),
+        if routing.selected_mode == "graph":
+            graph_seed_nodes = (
+                self._identify_seed_nodes(
+                    question=question,
+                    retrieved_chunks=(
+                        retrieved_chunks
+                    ),
+                    domain=domain,
+                )
             )
-        )
+            graph_context = (
+                self._collect_graph_context(
+                    seed_nodes=graph_seed_nodes,
+                    domain=domain,
+                    max_depth=(
+                        graph_max_depth
+                    ),
+                )
+            )
 
         text_context = "\n\n".join(
             chunk["text"]
@@ -495,6 +514,11 @@ class GraphRAGService:
                 graph_seed_nodes,
             "graph_context":
                 graph_context,
+            "retrieval_mode_requested": routing.requested_mode,
+            "retrieval_mode_used": routing.selected_mode,
+            "routing_confidence": routing.confidence,
+            "routing_signals": list(routing.signals),
+            "routing_entity_nodes": list(routing.entity_nodes),
             "sources":
                 sources,
         }
