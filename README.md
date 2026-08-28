@@ -3,9 +3,11 @@
 [![CI](https://github.com/syedkhadeermo/personal-graphrag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/syedkhadeermo/personal-graphrag-agent/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A portfolio-grade, multi-domain GraphRAG system that combines private knowledge retrieval, curated knowledge-graph traversal, named-agent delegation, persistent asynchronous jobs, and local or remote scientific tools.
+A local-first agentic scientific-computing platform that combines Vector RAG, GraphRAG, named-agent delegation, persistent asynchronous jobs, capability-aware remote workers, and local or remote scientific tools.
 
-The project demonstrates one orchestration layer across three domains:
+The project explores a practical engineering question: **when does graph-enhanced retrieval add enough value to justify its additional context and latency?** An independent public-document pilot benchmark found that Vector RAG performed better on direct questions, while graph augmentation showed selective benefit on relationship-oriented boundary questions. The system therefore supports conditional routing between Vector RAG and GraphRAG rather than assuming graph retrieval is always better.
+
+The same orchestration layer executes workloads across three domains:
 
 - Drug discovery: RDKit, ADMET-AI, AutoDock Vina, Smina and GROMACS
 - CAD and simulation: FreeCAD, OpenFOAM and Blender
@@ -28,6 +30,7 @@ The project demonstrates one orchestration layer across three domains:
 - FastAPI discovery, submission and job-status endpoints
 - Dockerized local execution for portable tools such as RDKit
 - Defensive scope validation for the optional cybersecurity domain
+- Independent Vector RAG vs GraphRAG evaluation with conditional retrieval routing
 
 ## Architecture
 
@@ -38,9 +41,10 @@ flowchart TD
     Delegate --> Jobs["Persistent job dispatcher"]
     Jobs --> Tools["Domain tool registry"]
     Jobs --> Workers["Capability-aware workers"]
-    API --> RAG["GraphRAG service"]
-    RAG --> Vector["Chroma retrieval"]
-    RAG --> Graph["Knowledge-graph traversal"]
+    API --> RAG["Retrieval service"]
+    RAG --> Route["Conditional retrieval routing"]
+    Route --> Vector["Vector RAG / Chroma"]
+    Route --> Graph["Bounded GraphRAG"]
     Vector --> Generate["Grounded generation"]
     Graph --> Generate
     Tools --> Artifacts["Validated artifacts"]
@@ -96,6 +100,33 @@ The cybersecurity domain demonstrates bounded defensive automation rather than p
 - Records NIST SP 800-115 discovery-phase methodology metadata
 
 It performs no exploitation, authentication attempts, banner collection, password testing or unrestricted scanning.
+
+## Independent Vector RAG vs GraphRAG pilot
+
+The repository includes a small independent benchmark using public documents, real Chroma retrieval and gold claims maintained separately from the curated knowledge graph. The purpose is to measure retrieval strategies rather than construct an evaluation that assumes GraphRAG should win.
+
+Latest representative run:
+
+| Metric | Vector RAG | GraphRAG |
+|---|---:|---:|
+| Claim coverage | **0.667** | 0.639 |
+| Average prompt tokens | **2,580** | 2,768 |
+| Average answer tokens | **178** | 208 |
+| Average generation latency | **23.1 s** | 28.0 s |
+
+Retrieval source recall: **0.778**
+
+Claim coverage by question category:
+
+| Category | Questions | Vector RAG | GraphRAG |
+|---|---:|---:|---:|
+| Direct | 3 | **1.000** | 0.889 |
+| Cross-source | 2 | 0.500 | 0.500 |
+| Boundary | 1 | 0.000 | **0.167** |
+
+This small pilot does **not** demonstrate a universal GraphRAG advantage. Vector retrieval was stronger and cheaper for direct questions, while graph augmentation showed selective benefit on the boundary question. These results motivated conditional routing: direct questions stay on Vector RAG, while relationship-oriented questions can add bounded graph context.
+
+The benchmark is intentionally small and should be treated as an engineering pilot rather than a general statistical claim about GraphRAG.
 
 ## GraphRAG behavior
 
@@ -281,6 +312,8 @@ app/
   vectorstore/        ChromaDB adapter
 demos/
   cad_flow_channel/   FreeCAD, OpenFOAM and Blender demonstration
+evaluation/
+  public_graphrag/    independent Vector RAG vs GraphRAG pilot
 scripts/              maintenance and privacy-audit utilities
 tests/                isolated unit and integration tests
 ```
@@ -291,4 +324,6 @@ This repository is an engineering portfolio and research-orchestration demonstra
 
 ## Project status
 
-The core multi-domain GraphRAG, named-agent, persistent-job, API, Docker, knowledge-ingestion and remote CAD demonstration layers are implemented and tested. Future work will focus on provider abstraction, additional reproducible scientific case studies and optional distributed GPU scheduling.
+The portfolio implementation is feature-complete for its current scope. The repository includes conditional Vector/GraphRAG retrieval, provider-neutral grounded generation, named-agent delegation, persistent asynchronous jobs, capability- and health-aware worker routing, FastAPI and Docker interfaces, validated artifact handling, and verified local/remote scientific workflows.
+
+The current public pilot benchmark and automated test suite provide reproducible evaluation and regression coverage. Future work is intentionally limited to larger evaluation sets, additional reproducible scientific case studies, deployment/infrastructure experiments, and production hardening rather than expansion of the core orchestration architecture.
