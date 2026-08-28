@@ -29,6 +29,7 @@ The same orchestration layer executes workloads across three domains:
 - Provider-neutral generation through Ollama, OpenAI, Anthropic or Gemini
 - FastAPI discovery, submission and job-status endpoints
 - Dockerized local execution for portable tools such as RDKit
+- Verified AWS deployment with Terraform, EC2, Session Manager, scoped IAM and private S3 artifacts ([details](infra/terraform/README.md))
 - Defensive scope validation for the optional cybersecurity domain
 - Independent Vector RAG vs GraphRAG evaluation with conditional retrieval routing
 
@@ -314,9 +315,17 @@ demos/
   cad_flow_channel/   FreeCAD, OpenFOAM and Blender demonstration
 evaluation/
   public_graphrag/    independent Vector RAG vs GraphRAG pilot
+infra/
+  terraform/          verified AWS deployment and lifecycle documentation
 scripts/              maintenance and privacy-audit utilities
 tests/                isolated unit and integration tests
 ```
+
+## Verified AWS deployment
+
+The [Terraform implementation](infra/terraform/README.md) provisions a bounded AWS environment with a VPC, an IP-restricted EC2 API, Systems Manager administration, scoped IAM and private S3 artifact storage.
+
+A complete deployment cycle in `eu-north-1` created 17 resources; verified `/health`, `/capabilities`, Systems Manager connectivity and S3 synchronization; confirmed zero Terraform drift; and then destroyed every resource, leaving an empty state.
 
 ## Scope
 
@@ -326,4 +335,4 @@ This repository is an engineering portfolio and research-orchestration demonstra
 
 The portfolio implementation is feature-complete for its current scope. The repository includes conditional Vector/GraphRAG retrieval, provider-neutral grounded generation, named-agent delegation, persistent asynchronous jobs, capability- and health-aware worker routing, FastAPI and Docker interfaces, validated artifact handling, and verified local/remote scientific workflows.
 
-The current public pilot benchmark and automated test suite provide reproducible evaluation and regression coverage. Future work is intentionally limited to larger evaluation sets, additional reproducible scientific case studies, deployment/infrastructure experiments, and production hardening rather than expansion of the core orchestration architecture.
+The public pilot benchmark, automated test suite and verified Terraform lifecycle provide reproducible evaluation, regression and infrastructure evidence. Future work is intentionally limited to larger evaluation sets, additional reproducible scientific case studies, remote Terraform state with native locking, and production hardening rather than expansion of the core orchestration architecture.
