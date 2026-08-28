@@ -1,0 +1,6 @@
+*.tf text eol=lf
+*.hcl text eol=lf
+*.tftpl text eol=lf
+*.example text eol=lf
+.gitignore text eol=lf
+*.md text eol=lf
