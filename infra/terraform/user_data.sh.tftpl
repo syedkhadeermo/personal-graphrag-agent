@@ -1,0 +1,78 @@
+#!/bin/bash
+set -euo pipefail
+
+exec > >(tee /var/log/graphrag-bootstrap.log | logger -t user-data -s 2>/dev/console) 2>&1
+
+dnf install -y docker git
+systemctl enable --now docker
+systemctl enable --now amazon-ssm-agent
+
+install -d -m 0755 /opt/graphrag
+install -d -m 0755 /opt/graphrag/data
+chown 10001:10001 /opt/graphrag/data
+
+git clone \
+  --branch "${app_git_ref}" \
+  --depth 1 \
+  "${app_repository_url}" \
+  /opt/graphrag/source
+
+docker build \
+  --tag personal-graphrag-api:${app_git_ref} \
+  /opt/graphrag/source
+
+docker run \
+  --detach \
+  --name personal-graphrag-api \
+  --restart unless-stopped \
+  --publish 8000:8000 \
+  --volume /opt/graphrag/data:/app/data \
+  personal-graphrag-api:${app_git_ref}
+
+cat >/usr/local/bin/sync-graphrag-artifacts <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+aws s3 sync \
+  /opt/graphrag/data \
+  s3://${artifact_bucket_name}/runtime/ \
+  --only-show-errors
+SCRIPT
+chmod 0755 /usr/local/bin/sync-graphrag-artifacts
+
+cat >/etc/systemd/system/graphrag-artifact-sync.service <<'UNIT'
+[Unit]
+Description=Synchronize GraphRAG runtime artifacts to S3
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sync-graphrag-artifacts
+UNIT
+
+cat >/etc/systemd/system/graphrag-artifact-sync.timer <<'UNIT'
+[Unit]
+Description=Run GraphRAG artifact synchronization every five minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now graphrag-artifact-sync.timer
+
+for attempt in $(seq 1 30); do
+  if curl --fail --silent http://127.0.0.1:8000/health >/dev/null; then
+    /usr/local/bin/sync-graphrag-artifacts
+    exit 0
+  fi
+  sleep 10
+done
+
+docker logs personal-graphrag-api
+exit 1
