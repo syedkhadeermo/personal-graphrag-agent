@@ -326,6 +326,35 @@ tests/                isolated unit and integration tests
 The [Terraform implementation](infra/terraform/README.md) provisions a bounded AWS environment with a VPC, an IP-restricted EC2 API, Systems Manager administration, scoped IAM and private S3 artifact storage.
 
 A complete deployment cycle in `eu-north-1` created 17 resources; verified `/health`, `/capabilities`, Systems Manager connectivity and S3 synchronization; confirmed zero Terraform drift; and then destroyed every resource, leaving an empty state.
+## Job recovery model and current limitation
+
+The persistent job layer is designed to recover conservatively after manager or process interruption.
+
+On dispatcher startup, persisted `QUEUED` jobs are reloaded into the in-memory queue and must still pass the normal atomic claim before execution. Stale jobs found in `RUNNING` or `VALIDATING` are instead moved to `RECOVERY_REQUIRED`.
+
+`RECOVERY_REQUIRED` deliberately does not trigger automatic re-execution. After an interrupted scientific workload, the orchestrator may not know whether the remote process stopped, completed successfully, or produced artifacts before communication was lost. Automatically requeuing such work could therefore duplicate expensive computation or create ambiguous artifacts.
+
+### Current recovery boundary
+
+Recovery v1 performs stale-job reconciliation during dispatcher startup. Worker health is used for health-aware workload routing, but the current implementation does not continuously reconcile already-running jobs against worker liveness.
+
+As a result, if a worker or remote execution path fails silently while the manager remains alive, and that failure does not propagate through the active execution path as an exception or timeout, the persisted job may remain `RUNNING` until a later dispatcher restart triggers stale-job recovery.
+
+`RECOVERY_REQUIRED` is currently a durable indication that operator reconciliation is needed; Recovery v1 does not yet provide a complete operator-facing resume/retry/accept-completed workflow.
+
+### Planned recovery improvements
+
+A production-oriented recovery layer would extend this design with:
+
+* lease or execution-heartbeat tracking for active jobs;
+* periodic detection of expired or stale execution leases;
+* reconciliation between persisted job state, worker state and produced artifacts;
+* explicit operator actions for retry, fail, resume where supported, or accept an externally completed result;
+* idempotency safeguards before re-executing uncertain work; and
+* metrics and alerts for stale and `RECOVERY_REQUIRED` jobs.
+
+The design goal is to improve automatic failure detection without treating uncertain remote execution as safely repeatable by default.
+
 
 ## Scope
 
