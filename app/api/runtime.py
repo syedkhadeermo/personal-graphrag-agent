@@ -28,6 +28,18 @@ from app.agent.tools.tool_registry import (
     ToolRegistry,
 )
 
+from app.agent.workers.remote_compute_worker import (
+    RemoteComputeWorker,
+)
+
+from app.agent.workers.worker_capabilities import (
+    WorkerCapability,
+)
+
+from app.agent.workers.worker_registry import (
+    WorkerRegistry,
+)
+
 
 class ApiRuntime:
     """
@@ -36,12 +48,14 @@ class ApiRuntime:
     Reuses:
         - ToolRegistry
         - NamedAgentRegistry
+        - WorkerRegistry
         - JobManager
         - JobDispatcher
         - AgentDelegationService
 
-    The API owns lifecycle only. Scientific execution and
-    persistence remain in the existing components.
+    The API owns lifecycle and composition only.
+    Scientific execution, worker selection, and persistence
+    remain in the existing components.
     """
 
     def __init__(
@@ -125,6 +139,16 @@ class ApiRuntime:
             GRAPH_RAG_POLL_TIMEOUT
             GRAPH_RAG_RECOVER_ON_START
             GRAPH_RAG_STALE_AFTER_SECONDS
+
+        Optional remote worker:
+            GRAPH_RAG_REMOTE_HOST
+            GRAPH_RAG_REMOTE_USERNAME
+            GRAPH_RAG_REMOTE_WORKER_ID
+            GRAPH_RAG_REMOTE_HOSTNAME
+
+        A remote compute worker is registered only when both
+        GRAPH_RAG_REMOTE_HOST and GRAPH_RAG_REMOTE_USERNAME
+        are configured.
         """
 
         worker_count = int(
@@ -163,6 +187,26 @@ class ApiRuntime:
             )
         )
 
+        remote_host = os.getenv(
+            "GRAPH_RAG_REMOTE_HOST",
+            "",
+        ).strip()
+
+        remote_username = os.getenv(
+            "GRAPH_RAG_REMOTE_USERNAME",
+            "",
+        ).strip()
+
+        remote_worker_id = os.getenv(
+            "GRAPH_RAG_REMOTE_WORKER_ID",
+            "remote-compute",
+        ).strip()
+
+        remote_hostname = os.getenv(
+            "GRAPH_RAG_REMOTE_HOSTNAME",
+            "",
+        ).strip()
+
         tool_registry = (
             create_default_registry()
         )
@@ -171,7 +215,51 @@ class ApiRuntime:
             create_default_agent_registry()
         )
 
-        job_manager = JobManager()
+        # =====================================================
+        # Remote compute worker composition
+        # =====================================================
+
+        worker_registry = WorkerRegistry()
+
+        if remote_host and remote_username:
+            remote_worker = RemoteComputeWorker(
+                host=remote_host,
+                username=remote_username,
+            )
+
+            metadata = {
+                "connection": "ssh",
+                "host": remote_host,
+                "username": remote_username,
+            }
+
+            if remote_hostname:
+                metadata["hostname"] = remote_hostname
+
+            worker_registry.register(
+                worker_id=remote_worker_id,
+                worker=remote_worker,
+                description=(
+                    "Remote scientific compute worker"
+                ),
+                metadata=metadata,
+                capabilities=[
+                    WorkerCapability.REMOTE_COMMAND,
+                    WorkerCapability.FREECAD,
+                    WorkerCapability.BLENDER,
+                    WorkerCapability.OPENFOAM,
+                    WorkerCapability.GROMACS,
+                    WorkerCapability.CALCULIX,
+                ],
+            )
+
+        # =====================================================
+        # Job orchestration
+        # =====================================================
+
+        job_manager = JobManager(
+            worker_registry=worker_registry,
+        )
 
         dispatcher = JobDispatcher(
             registry=tool_registry,

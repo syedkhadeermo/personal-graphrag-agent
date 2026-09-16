@@ -12,6 +12,10 @@ from app.agent.tools.domain_tools.cybersecurity_tools import (
     CybersecurityTools,
 )
 
+from app.agent.tools.domain_tools.structural_fea_tools import (
+    StructuralFEATools,
+)
+
 
 def create_default_registry() -> ToolRegistry:
     """
@@ -20,6 +24,7 @@ def create_default_registry() -> ToolRegistry:
     Domains:
         - drug_discovery
         - cad_simulation
+        - structural_fea
         - cybersecurity
     """
 
@@ -111,6 +116,22 @@ def create_default_registry() -> ToolRegistry:
         description=(
             "Remote OpenFOAM computational fluid dynamics "
             "simulation workflow."
+        ),
+    )
+
+    # =========================================================
+    # Structural FEA
+    # =========================================================
+
+    structural_fea_tools = StructuralFEATools()
+
+    registry.register(
+        domain="structural_fea",
+        name="calculix",
+        function=structural_fea_tools.run_calculix,
+        description=(
+            "Remote CalculiX structural finite element "
+            "analysis workflow."
         ),
     )
 

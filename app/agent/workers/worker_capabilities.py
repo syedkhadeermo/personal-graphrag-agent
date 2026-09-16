@@ -15,6 +15,7 @@ class WorkerCapability(str, Enum):
     BLENDER = "blender"
     OPENFOAM = "openfoam"
     GROMACS = "gromacs"
+    CALCULIX = "calculix"
 
 
 def normalize_capability(
