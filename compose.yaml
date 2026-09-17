@@ -10,9 +10,10 @@ services:
     restart: unless-stopped
 
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
     environment:
+      GRAPH_RAG_API_KEY: "${GRAPH_RAG_API_KEY:?Set GRAPH_RAG_API_KEY in .env}"
       GRAPH_RAG_JOB_WORKERS: "2"
       GRAPH_RAG_POLL_TIMEOUT: "0.5"
       GRAPH_RAG_RECOVER_ON_START: "true"

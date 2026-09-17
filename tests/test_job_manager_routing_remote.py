@@ -60,6 +60,7 @@ def main() -> None:
             WorkerCapability.BLENDER,
             WorkerCapability.OPENFOAM,
             WorkerCapability.GROMACS,
+            WorkerCapability.CALCULIX,
         ],
     )
 
@@ -160,6 +161,29 @@ def main() -> None:
         is True
     )
 
+    assert (
+        registry.supports(
+            "mini-pc",
+            WorkerCapability.CALCULIX,
+        )
+        is True
+    )
+
+    selected_calculix_worker = (
+        manager
+        .workload_router
+        .select_worker(
+            required_capabilities=[
+                WorkerCapability.CALCULIX,
+            ],
+        )
+    )
+
+    assert (
+        selected_calculix_worker
+        == "mini-pc"
+    )
+
     print(
         "\nPASS: JobManager selected mini-pc "
         "through WorkloadRouter."
@@ -174,7 +198,17 @@ def main() -> None:
     )
 
     print(
-        "PASS: No FreeCAD process was executed."
+        "PASS: CalculiX capability was verified."
+    )
+
+    print(
+        "PASS: WorkloadRouter selected mini-pc "
+        "for CalculiX."
+    )
+
+    print(
+        "PASS: No FreeCAD or CalculiX process "
+        "was executed."
     )
 
     print(

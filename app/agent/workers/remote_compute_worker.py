@@ -1,6 +1,15 @@
 import subprocess
 from typing import Any
 
+from app.agent.workers.remote_execution_policy import (
+    quote_bash_argument,
+    quote_windows_argument,
+    validate_artifact_path,
+    validate_job_script,
+    validate_openfoam_case,
+    validate_openfoam_solver,
+)
+
 
 class RemoteComputeWorker:
     """
@@ -135,14 +144,11 @@ class RemoteComputeWorker:
         Execute a FreeCAD Python script remotely.
         """
 
-        if not script_path or not script_path.strip():
-            raise ValueError(
-                "FreeCAD script path cannot be empty."
-            )
+        script_path = validate_job_script(script_path)
 
         command = (
             f'"{freecad_executable}" '
-            f'"{script_path}"'
+            + quote_windows_argument(script_path)
         )
 
         result = self.run(
@@ -177,10 +183,11 @@ class RemoteComputeWorker:
         """
 
         if script_path:
+            script_path = validate_job_script(script_path)
             command = (
                 f'"{blender_executable}" '
                 f'--background '
-                f'--python "{script_path}"'
+                f'--python {quote_windows_argument(script_path)}'
             )
 
         else:
@@ -213,19 +220,12 @@ class RemoteComputeWorker:
         Execute OpenFOAM inside WSL2 on the remote Windows worker.
         """
 
-        if not case_directory or not case_directory.strip():
-            raise ValueError(
-                "OpenFOAM case directory cannot be empty."
-            )
-
-        if not solver or not solver.strip():
-            raise ValueError(
-                "OpenFOAM solver cannot be empty."
-            )
+        case_directory = validate_openfoam_case(case_directory)
+        solver = validate_openfoam_solver(solver)
 
         commands = [
             "source /opt/openfoam12/etc/bashrc",
-            f'cd "{case_directory}"',
+            f"cd {quote_bash_argument(case_directory)}",
         ]
 
         if run_blockmesh:
@@ -301,12 +301,7 @@ class RemoteComputeWorker:
             - future remote scientific artifacts
         """
 
-        if not path or not path.strip():
-            raise ValueError(
-                "Remote artifact path cannot be empty."
-            )
-
-        path = path.strip()
+        path = validate_artifact_path(path)
 
         # Escape a single quote for a PowerShell
         # single-quoted literal string.
@@ -518,12 +513,7 @@ class RemoteComputeWorker:
             etc.
         """
 
-        if not path or not path.strip():
-            raise ValueError(
-                "Remote artifact path cannot be empty."
-            )
-
-        path = path.strip()
+        path = validate_artifact_path(path)
 
         command = (
             f'if exist "{path}" '

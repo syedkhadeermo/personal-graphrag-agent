@@ -34,12 +34,13 @@ def create_default_agent_registry(
         NamedAgent(
             agent_id="engineering-agent",
             description=(
-                "Handles FreeCAD and OpenFOAM "
+                "Handles CAD, CFD, and structural FEA "
                 "engineering workflows."
             ),
             routes=(
                 "cad_simulation:freecad",
                 "cad_simulation:openfoam",
+                "structural_fea:calculix",
             ),
             priority=10,
         )
