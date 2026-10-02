@@ -144,13 +144,28 @@ The generic orchestration layers do not contain FreeCAD-, GROMACS-, or CalculiX-
 
 See [Architecture](docs/architecture.md) for component responsibilities and request lifecycles.
 
+### Read the core implementation
+
+The main engineering paths are directly browsable without cloning the repository:
+
+| Concern | Source |
+|---|---|
+| Named-agent authorization | [`app/agent/named_agent_registry.py`](app/agent/named_agent_registry.py) |
+| Durable asynchronous dispatch | [`app/agent/jobs/job_dispatcher.py`](app/agent/jobs/job_dispatcher.py) |
+| Capability-aware worker routing | [`app/agent/workers/workload_router.py`](app/agent/workers/workload_router.py) |
+| Conditional retrieval decision | [`app/graphrag/retrieval_router.py`](app/graphrag/retrieval_router.py) |
+| GraphRAG orchestration | [`app/graphrag/graphrag_service.py`](app/graphrag/graphrag_service.py) |
+| Persistent bounded graph traversal | [`app/knowledge_graph/graph_store.py`](app/knowledge_graph/graph_store.py) |
+| Remote-execution policy | [`app/agent/workers/remote_execution_policy.py`](app/agent/workers/remote_execution_policy.py) |
+| API composition and job endpoints | [`app/api/main.py`](app/api/main.py) |
+
 ## Supported capabilities
 
 | Domain | Tools | Execution profile |
 |---|---|---|
-| Drug discovery | RDKit, ADMET-AI, AutoDock Vina, Smina, GROMACS | Portable RDKit; optional local/remote scientific stack |
-| CAD and CFD | FreeCAD, OpenFOAM, Blender | Remote or machine-specific worker |
-| Structural FEA | CalculiX | Remote worker |
+| Drug discovery | RDKit, ADMET-AI, AutoDock Vina, Smina, GROMACS | Bundled RDKit; optional ADMET Python stack; external docking/MD executables |
+| CAD and CFD | FreeCAD, OpenFOAM, Blender | External applications on a machine-specific worker |
+| Structural FEA | CalculiX | External application on a remote worker |
 | Defensive security | Authorized private/loopback TCP discovery | Portable, explicitly bounded |
 
 Registered tool routes include:
@@ -167,6 +182,20 @@ cad_simulation:blender
 structural_fea:calculix
 cybersecurity:vulnerability_scan
 ```
+
+### Installation profiles
+
+Supported adapters do not imply that every scientific application is bundled into the core Python environment.
+
+| Profile | Install or provide | Purpose |
+|---|---|---|
+| Core/API | `python -m pip install -r requirements.txt` | FastAPI, retrieval, local generation, document ingestion, and portable RDKit execution |
+| Development/CI | `python -m pip install -r requirements-dev.txt` | Core plus pytest and Ruff |
+| ADMET | `python -m pip install -r requirements-sci.txt` | Core plus pinned PyTorch and ADMET-AI |
+| Remote execution | System OpenSSH client | Used through `subprocess`; Paramiko is not required |
+| Docking/MD/CAD/CFD/FEA | Tool executable on the selected worker | Vina, Smina, GROMACS, FreeCAD, OpenFOAM, Blender, or CalculiX |
+
+The graph store is implemented in the repository and does not require NetworkX. Cloud generation uses Python's standard-library HTTP client and does not directly require `aiohttp` or provider SDKs. See [Dependency and runtime profiles](docs/dependencies.md) for the complete boundary.
 
 ## Conditional Vector RAG / GraphRAG
 
@@ -349,6 +378,7 @@ tests/               portable and externally marked tests
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Dependency and runtime profiles](docs/dependencies.md)
 - [Security model](docs/security-model.md)
 - [Verified workflows](docs/verified-workflows.md)
 - [Public GraphRAG benchmark](evaluation/public_graphrag/README.md)
