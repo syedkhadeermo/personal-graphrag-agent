@@ -34,7 +34,7 @@ This is not a chat wrapper around a vector database. It separates retrieval, aut
 
 | Evidence | Result |
 |---|---:|
-| Portable CI suite | **81 passed, 15 skipped** |
+| Portable CI suite | **80 passed, 15 skipped** |
 | Ruff | **All checks passed** |
 | Public GraphRAG benchmark | Vector RAG stronger on direct questions; selective graph benefit on a boundary question |
 | CAD/CFD demo | FreeCAD → OpenFOAM → Blender workflow completed |
