@@ -13,14 +13,13 @@ Every field that can influence a path, executable, solver, remote command, artif
 
 ## API boundary
 
-`POST /jobs` and `GET /jobs/{job_id}` require the `X-API-Key` header when `GRAPH_RAG_API_KEY` is configured. Comparison uses a constant-time digest comparison.
+All endpoints except `/health` require the `X-API-Key` header. Comparison uses a constant-time digest comparison. Startup fails closed when `GRAPH_RAG_API_KEY` is absent.
 
-Discovery endpoints remain public:
+The only unauthenticated endpoint is:
 
 - `/health`
-- `/runtime`
-- `/capabilities`
-- `/agents`
+
+For loopback-only development, `GRAPH_RAG_ALLOW_INSECURE_LOCAL=true` explicitly disables the API-key requirement. This bypass is never suitable for a shared or remotely reachable service.
 
 Docker Compose binds the service to `127.0.0.1:8000`. Do not change this to all interfaces without adding an authenticated TLS termination layer and reviewing the exposed discovery information.
 
@@ -43,7 +42,7 @@ Relevant controls include:
 
 Do not construct shell commands from unvalidated user-controlled fragments. Prefer structured argument lists, strict allowlists, normalized paths, and containment checks.
 
-Mounting an SSH directory into the container makes its contents available to the application process. Use a dedicated SSH configuration and key with the narrowest practical permissions; do not mount an unrestricted personal key set in a shared deployment.
+The base Compose file does not mount SSH material. Remote-worker users must opt in with `compose.remote.yaml` and `GRAPH_RAG_SSH_DIR`. Use a dedicated SSH configuration and key with the narrowest practical permissions; do not mount an unrestricted personal key set in a shared deployment.
 
 ## Artifact boundary
 

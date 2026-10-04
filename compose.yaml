@@ -21,7 +21,6 @@ services:
 
     volumes:
       - ./data:/app/data
-      - ${USERPROFILE}/.ssh:/ssh-host:ro
 
     healthcheck:
       test:

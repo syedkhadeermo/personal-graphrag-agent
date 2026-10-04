@@ -5,7 +5,9 @@ from evaluation.public_graphrag.benchmark import (
     claim_is_present,
     evidence_audit,
     load_json,
+    routing_summary,
     score_answer,
+    summarize_metrics,
 )
 from app.graphrag.graphrag_service import GraphRAGService
 from app.knowledge_graph.graph_store import KnowledgeGraphStore
@@ -20,7 +22,7 @@ def test_public_source_and_gold_manifests_are_independent() -> None:
     source_ids = {source["source_id"] for source in sources}
 
     assert len(sources) >= 6
-    assert len(questions) >= 6
+    assert 30 <= len(questions) <= 50
     assert {question["category"] for question in questions} == {
         "direct",
         "cross_source",
@@ -29,6 +31,49 @@ def test_public_source_and_gold_manifests_are_independent() -> None:
     for question in questions:
         assert set(question["gold_source_ids"]).issubset(source_ids)
         assert question["claims"]
+        assert question["expected_retrieval_mode"] in {"vector", "graph"}
+
+
+def test_metric_summary_reports_population_standard_deviation() -> None:
+    records = [
+        {
+            "claim_coverage": 0.0,
+            "prompt_tokens": 10,
+            "answer_tokens": 2,
+            "generation_latency_ms": 100,
+        },
+        {
+            "claim_coverage": 1.0,
+            "prompt_tokens": 20,
+            "answer_tokens": 4,
+            "generation_latency_ms": 300,
+        },
+    ]
+
+    summary = summarize_metrics(records)
+
+    assert summary["claim_coverage"] == 0.5
+    assert summary["claim_coverage_stddev"] == 0.5
+    assert summary["generation_latency_ms_stddev"] == 100
+
+
+def test_routing_summary_builds_confusion_matrix() -> None:
+    rows = [
+        {
+            "expected_retrieval_mode": "vector",
+            "router_decision": {"selected_mode": "vector"},
+        },
+        {
+            "expected_retrieval_mode": "graph",
+            "router_decision": {"selected_mode": "vector"},
+        },
+    ]
+
+    summary = routing_summary(rows)
+
+    assert summary["accuracy"] == 0.5
+    assert summary["confusion_matrix"]["vector"]["vector"] == 1
+    assert summary["confusion_matrix"]["graph"]["vector"] == 1
 
 
 def test_claim_scoring_requires_every_term_group() -> None:

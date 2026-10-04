@@ -5,18 +5,34 @@
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-An execution-oriented AI platform that combines **conditional Vector RAG/GraphRAG**, **named-agent authorization**, **durable asynchronous jobs**, and **capability-aware routing** to local or remote scientific-compute workers.
-
-The project answers two practical engineering questions:
-
-1. When does graph context add enough value to justify its extra tokens and latency?
-2. Can one orchestration architecture support substantially different computational domains without embedding domain logic in its core?
-
-The current implementation spans drug discovery, CAD/CFD, structural FEA, and bounded defensive-security workflows.
+Personal GraphRAG Agent is a Python platform for answering technical questions and running long scientific-computing jobs. It chooses simple vector retrieval for direct questions and bounded graph traversal when relationships or workflow context matter. The same orchestration layer can dispatch chemistry, CAD/CFD, structural-analysis, and defensive-security tools to local or remote workers.
 
 ![FreeCAD to OpenFOAM to Blender demonstration](docs/assets/flow_channel_animation.gif)
 
-## Why this project is different
+## 60-second local demo
+
+Docker is the shortest path to a running API. It requires an explicit API key and exposes the service only on `127.0.0.1`.
+
+```bash
+git clone https://github.com/syedkhadeermo/personal-graphrag-agent.git
+cd personal-graphrag-agent
+cp .env.example .env
+docker compose up --build -d
+curl http://127.0.0.1:8000/health
+curl -H "X-API-Key: replace-with-a-long-random-secret" \
+  http://127.0.0.1:8000/capabilities
+```
+
+In PowerShell, use `Copy-Item .env.example .env`, then call the protected endpoint with:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/capabilities `
+  -Headers @{"X-API-Key"="replace-with-a-long-random-secret"}
+```
+
+Replace the example key in `.env` before starting a shared or remotely reachable service. Interactive API documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+## Design goals
 
 This is not a chat wrapper around a vector database. It separates retrieval, authorization, durable execution, worker selection, domain adapters, and artifact handling.
 
@@ -34,49 +50,14 @@ This is not a chat wrapper around a vector database. It separates retrieval, aut
 
 | Evidence | Result |
 |---|---:|
-| Portable CI suite | **80 passed, 15 skipped** |
+| Portable CI suite | **85 passed, 15 skipped** |
 | Ruff | **All checks passed** |
-| Public GraphRAG benchmark | Vector RAG stronger on direct questions; selective graph benefit on a boundary question |
+| Public GraphRAG benchmark | 32 gold questions, expected-route labels, router accuracy, confusion matrix, and per-run dispersion |
 | CAD/CFD demo | FreeCAD → OpenFOAM → Blender workflow completed |
 | Structural FEA | CalculiX asynchronous execution path completed with return code 0 |
 | AWS portfolio deployment | 17 resources created, verified, drift-checked, and destroyed |
 
 These results demonstrate engineering behavior, not universal GraphRAG superiority or experimental scientific validation. See [Verified workflows](docs/verified-workflows.md) for scope and limitations.
-
-## Quick start
-
-The fastest portable demonstration uses Docker and the RDKit workflow included in the base image.
-
-### Windows PowerShell
-
-```powershell
-git clone https://github.com/syedkhadeermo/personal-graphrag-agent.git
-Set-Location personal-graphrag-agent
-Copy-Item .env.example .env
-docker compose up --build -d
-
-Invoke-RestMethod http://127.0.0.1:8000/health
-Invoke-RestMethod http://127.0.0.1:8000/capabilities
-```
-
-Change the example `GRAPH_RAG_API_KEY` in `.env` before exposing or sharing the service.
-
-### Linux or macOS
-
-The Compose file mounts the current user's SSH directory for optional remote workers. Map `USERPROFILE` to the home directory before starting it:
-
-```bash
-git clone https://github.com/syedkhadeermo/personal-graphrag-agent.git
-cd personal-graphrag-agent
-cp .env.example .env
-export USERPROFILE="$HOME"
-docker compose up --build -d
-
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/capabilities
-```
-
-The API documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
 ## Run a complete portable job
 
@@ -212,22 +193,11 @@ Every response records:
 
 ### Public benchmark
 
-The repository contains a small independent benchmark built from public RDKit, AutoDock Vina, and GROMACS documentation. Gold claims are maintained separately from the curated graph.
+The repository includes a 32-question benchmark built only from public RDKit, AutoDock Vina, and GROMACS documentation. It contains 17 direct, 10 cross-source, and 5 boundary questions. Every question has an expected retrieval route, independently maintained gold sources, and claim-level checks.
 
-| Metric | Vector RAG | GraphRAG |
-|---|---:|---:|
-| Claim coverage | **0.667** | 0.639 |
-| Average prompt tokens | **2,580** | 2,768 |
-| Average answer tokens | **178** | 208 |
-| Average generation latency | **23.1 s** | 28.0 s |
+The runner reports router accuracy and a confusion matrix, retrieval source recall, claim coverage, token use, latency, and population standard deviation across repeated runs. Vector and GraphRAG generation order alternates to reduce ordering bias.
 
-| Question category | Questions | Vector RAG | GraphRAG |
-|---|---:|---:|---:|
-| Direct | 3 | **1.000** | 0.889 |
-| Cross-source | 2 | 0.500 | 0.500 |
-| Boundary | 1 | 0.000 | **0.167** |
-
-The result does not establish a universal GraphRAG advantage. It motivated the conditional router: vector retrieval is usually cheaper for direct questions, while bounded graph augmentation may add relationship evidence for selected questions.
+The previously published six-question run is retained in [Verified workflows](docs/verified-workflows.md) as a clearly labelled historical pilot, not as evidence for a general performance claim. The expanded suite must be run and manually reviewed before new model-comparison numbers are published.
 
 See the [benchmark methodology](evaluation/public_graphrag/README.md) for reproducibility and interpretation limits.
 
@@ -262,13 +232,13 @@ The recovery policy is deliberately conservative because silently duplicating an
 | Method | Endpoint | Purpose | Authentication |
 |---|---|---|---|
 | `GET` | `/health` | Service and dispatcher health | Public |
-| `GET` | `/runtime` | Runtime, queue, tool, and agent status | Public |
-| `GET` | `/capabilities` | Registered domains and tools | Public |
-| `GET` | `/agents` | Named-agent discovery | Public |
-| `POST` | `/jobs` | Validate and submit a durable job | API key when configured |
-| `GET` | `/jobs/{job_id}` | Read persisted job state | API key when configured |
+| `GET` | `/runtime` | Runtime, queue, tool, and agent status | API key |
+| `GET` | `/capabilities` | Registered domains and tools | API key |
+| `GET` | `/agents` | Named-agent discovery | API key |
+| `POST` | `/jobs` | Validate and submit a durable job | API key |
+| `GET` | `/jobs/{job_id}` | Read persisted job state | API key |
 
-Job endpoints accept the key in the `X-API-Key` header. If `GRAPH_RAG_API_KEY` is unset, authentication is disabled for local development. Never expose an unauthenticated instance to an untrusted network.
+Protected endpoints accept the key in the `X-API-Key` header. Startup fails when `GRAPH_RAG_API_KEY` is unset. A loopback-only developer may explicitly opt out with `GRAPH_RAG_ALLOW_INSECURE_LOCAL=true`; never use that setting on a shared or remotely reachable service.
 
 ## Remote scientific-compute workers
 
@@ -282,6 +252,13 @@ export GRAPH_RAG_REMOTE_HOSTNAME="optional-hostname"
 ```
 
 Additional allowlists constrain job roots, artifact roots, OpenFOAM case roots, and approved solver names. If remote configuration is absent, the API starts without registering a remote compute worker.
+
+The base Compose configuration does not mount SSH material. To enable a remote worker, point `GRAPH_RAG_SSH_DIR` at a dedicated least-privilege SSH directory and apply the opt-in override:
+
+```bash
+GRAPH_RAG_SSH_DIR=/path/to/dedicated-ssh \
+docker compose -f compose.yaml -f compose.remote.yaml up --build -d
+```
 
 Read [Security model](docs/security-model.md) before enabling remote execution.
 
@@ -298,7 +275,7 @@ Ollama is the default local provider:
 
 ```bash
 export GENERATION_PROVIDER="ollama"
-export OLLAMA_GENERATION_MODEL="deepseek-coder:6.7b"
+export OLLAMA_GENERATION_MODEL="qwen3:8b"
 ```
 
 Cloud credentials are read from environment variables and must never be committed. Generation-provider selection does not change the embedding model used by existing Chroma collections.
@@ -318,7 +295,7 @@ source .venv/bin/activate
 
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
-python -m ruff check app tests
+python -m ruff check app tests evaluation
 python -m pytest -q
 ```
 
@@ -369,7 +346,7 @@ tests/               portable and externally marked tests
 
 ## Scope and limitations
 
-- The public GraphRAG evaluation is an engineering pilot, not a statistically general benchmark.
+- The public GraphRAG evaluation is a portfolio benchmark, not a statistically general scientific benchmark.
 - Optional scientific tools require their own validated installations and domain-appropriate input preparation.
 - Artifact validation is workflow-dependent. Current CalculiX output files are not yet registered through the generic artifact manifest.
 - SQLite is appropriate for this single-service portfolio architecture; distributed production deployments would require a different queue and persistence design.

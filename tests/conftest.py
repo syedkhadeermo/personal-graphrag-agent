@@ -19,6 +19,13 @@ EXTERNAL_TEST_FILES = {
 }
 
 
+@pytest.fixture(autouse=True)
+def explicit_local_api_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep portable API tests explicit about their local auth bypass."""
+
+    monkeypatch.setenv("GRAPH_RAG_ALLOW_INSECURE_LOCAL", "true")
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--run-external",

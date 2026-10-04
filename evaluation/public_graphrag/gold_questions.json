@@ -2,6 +2,7 @@
   {
     "question_id": "direct_rdkit_01",
     "category": "direct",
+    "expected_retrieval_mode": "vector",
     "question": "According to the RDKit documentation, what Python function parses a SMILES string into a molecule, and what indicates parsing failure?",
     "gold_source_ids": ["rdkit_getting_started"],
     "claims": [
@@ -18,6 +19,7 @@
   {
     "question_id": "direct_vina_01",
     "category": "direct",
+    "expected_retrieval_mode": "vector",
     "question": "What is AutoDock Vina's default exhaustiveness in the basic docking tutorial, and what change is suggested for a more consistent result?",
     "gold_source_ids": ["vina_basic_docking"],
     "claims": [
@@ -34,6 +36,7 @@
   {
     "question_id": "direct_gromacs_01",
     "category": "direct",
+    "expected_retrieval_mode": "vector",
     "question": "How do gmx rms and gmx rmsf differ in what they calculate?",
     "gold_source_ids": ["gromacs_rms", "gromacs_rmsf"],
     "claims": [
@@ -50,6 +53,7 @@
   {
     "question_id": "cross_source_01",
     "category": "cross_source",
+    "expected_retrieval_mode": "graph",
     "question": "After AutoDock Vina stores ranked docking poses, which GROMACS analyses can examine structural deviation and atomic fluctuation during a trajectory?",
     "gold_source_ids": [
       "vina_python_docking",
@@ -74,6 +78,7 @@
   {
     "question_id": "cross_source_02",
     "category": "cross_source",
+    "expected_retrieval_mode": "graph",
     "question": "Which documented GROMACS commands cover RMSD, RMSF, radius of gyration, and hydrogen-bond analysis?",
     "gold_source_ids": [
       "gromacs_rms",
@@ -102,6 +107,7 @@
   {
     "question_id": "boundary_01",
     "category": "boundary",
+    "expected_retrieval_mode": "graph",
     "question": "Does the cited documentation establish that a low Vina score guarantees a dynamically stable protein-ligand complex? State only what the sources support.",
     "gold_source_ids": [
       "vina_basic_docking",
@@ -129,5 +135,213 @@
         "term_groups": [["docking", "vina"], ["rmsd", "rmsf", "trajectory"]]
       }
     ]
+  },
+  {
+    "question_id": "direct_rdkit_02",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "According to the RDKit documentation, which Supplier reads SDF files and how should each returned molecule be checked?",
+    "gold_source_ids": ["rdkit_getting_started"],
+    "claims": [{"claim_id": "supplier_check", "term_groups": [["sdmolsupplier"], ["none"], ["check", "test"]]}]
+  },
+  {
+    "question_id": "direct_rdkit_03",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "What does RDKit's MolToSmiles return by default, and how can stereochemical annotations be omitted?",
+    "gold_source_ids": ["rdkit_getting_started"],
+    "claims": [{"claim_id": "canonical_isomeric", "term_groups": [["canonical"], ["isomericsmiles"], ["false"]]}]
+  },
+  {
+    "question_id": "direct_rdkit_04",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "Which documented RDKit function generates and stores 2D coordinates for a molecule?",
+    "gold_source_ids": ["rdkit_getting_started"],
+    "claims": [{"claim_id": "2d_coordinates", "term_groups": [["compute2dcoords"], ["2d", "depiction"]]}]
+  },
+  {
+    "question_id": "direct_rdkit_05",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "According to the RDKit guide, what preparation is essential for generating a good 3D conformer with ETKDG?",
+    "gold_source_ids": ["rdkit_getting_started"],
+    "claims": [{"claim_id": "add_hydrogens", "term_groups": [["addhs", "add hydrogens", "add hs"], ["embed", "etkdg", "3d"]]}]
+  },
+  {
+    "question_id": "direct_vina_02",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "What information does AutoDock Vina receptor preparation place in the receptor PDBQT file?",
+    "gold_source_ids": ["vina_basic_docking"],
+    "claims": [{"claim_id": "receptor_pdbqt", "term_groups": [["polar hydrogen", "polar hydrogens"], ["partial charge", "partial charges"], ["pdbqt"]]}]
+  },
+  {
+    "question_id": "direct_vina_03",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "Why does the Vina tutorial advise against preparing a small-molecule ligand directly from PDB format?",
+    "gold_source_ids": ["vina_basic_docking"],
+    "claims": [{"claim_id": "pdb_bonds", "term_groups": [["bond connection", "bond connections", "bond order", "bond orders"], ["pdb"]]}]
+  },
+  {
+    "question_id": "direct_vina_04",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "What is the documented difference between AutoDock4 and Vina forcefields regarding affinity grid maps?",
+    "gold_source_ids": ["vina_basic_docking"],
+    "claims": [{"claim_id": "map_difference", "term_groups": [["autodock4", "ad4"], ["affinity map", "affinity maps"], ["internally", "precalculate", "autogrid4"]]}]
+  },
+  {
+    "question_id": "direct_vina_05",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "Which tool and output format does the Vina tutorial recommend for preserving bond orders and formal charges when exporting docking results?",
+    "gold_source_ids": ["vina_basic_docking"],
+    "claims": [{"claim_id": "meeko_sdf", "term_groups": [["meeko", "mk export"], ["sdf"], ["bond order", "bond orders"], ["formal charge", "formal charges"]]}]
+  },
+  {
+    "question_id": "direct_vina_06",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "Which Python API calls in the Vina tutorial score, locally minimize, dock, and write multiple poses?",
+    "gold_source_ids": ["vina_python_docking"],
+    "claims": [{"claim_id": "python_calls", "term_groups": [["score"], ["optimize"], ["dock"], ["write poses", "write_poses"]]}]
+  },
+  {
+    "question_id": "direct_vina_07",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "What does compute_vina_maps do when called before a ligand is initialized, and why is that useful?",
+    "gold_source_ids": ["vina_python_docking"],
+    "claims": [{"claim_id": "all_atom_maps", "term_groups": [["22", "all atom types", "each atom type"], ["batch", "virtual screening"]]}]
+  },
+  {
+    "question_id": "direct_gromacs_02",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "What three fitting choices are documented for gmx rms through the fit option?",
+    "gold_source_ids": ["gromacs_rms"],
+    "claims": [{"claim_id": "rms_fit", "term_groups": [["rotation and translation", "complete fit"], ["translation only"], ["no fitting", "none"]]}]
+  },
+  {
+    "question_id": "direct_gromacs_03",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "According to the gmx rmsf documentation, what does the oq option write?",
+    "gold_source_ids": ["gromacs_rmsf"],
+    "claims": [{"claim_id": "rmsf_bfactor", "term_groups": [["b factor", "b-factor"], ["pdb"], ["rmsf"]]}]
+  },
+  {
+    "question_id": "direct_gromacs_04",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "Which GROMACS commands calculate radius of gyration and hydrogen bonds?",
+    "gold_source_ids": ["gromacs_commands"],
+    "claims": [{"claim_id": "gyrate_hbond", "term_groups": [["gmx gyrate"], ["gmx hbond"]]}]
+  },
+  {
+    "question_id": "direct_gromacs_05",
+    "category": "direct",
+    "expected_retrieval_mode": "vector",
+    "question": "What trajectory quantity does gmx rmsf calculate, and what optional operation can precede it?",
+    "gold_source_ids": ["gromacs_rmsf"],
+    "claims": [{"claim_id": "rmsf_optional_fit", "term_groups": [["root mean square fluctuation", "rmsf", "standard deviation"], ["atomic positions"], ["fit", "fitting"]]}]
+  },
+  {
+    "question_id": "cross_source_03",
+    "category": "cross_source",
+    "expected_retrieval_mode": "graph",
+    "question": "Describe the workflow from AutoDock Vina ligand preparation through molecular docking to an SDF export that preserves chemical information.",
+    "gold_source_ids": ["vina_basic_docking"],
+    "claims": [{"claim_id": "vina_export_workflow", "term_groups": [["pdbqt"], ["dock", "docking"], ["meeko", "mk export"], ["sdf"]]}]
+  },
+  {
+    "question_id": "cross_source_04",
+    "category": "cross_source",
+    "expected_retrieval_mode": "graph",
+    "question": "What steps does the AutoDock Vina Python workflow use from loading a receptor and ligand to saving ranked docking poses?",
+    "gold_source_ids": ["vina_python_docking"],
+    "claims": [{"claim_id": "vina_python_workflow", "term_groups": [["set receptor", "set_receptor"], ["set ligand", "set_ligand_from_file"], ["compute vina maps", "compute_vina_maps"], ["dock"], ["write poses", "write_poses"]]}]
+  },
+  {
+    "question_id": "cross_source_05",
+    "category": "cross_source",
+    "expected_retrieval_mode": "graph",
+    "question": "Which steps connect molecular dynamics trajectories to RMSD, RMSF, radius-of-gyration, and hydrogen-bond evidence?",
+    "gold_source_ids": ["gromacs_rms", "gromacs_rmsf", "gromacs_commands"],
+    "claims": [{"claim_id": "md_analysis_suite", "term_groups": [["gmx rms"], ["gmx rmsf"], ["gmx gyrate"], ["gmx hbond"]]}]
+  },
+  {
+    "question_id": "cross_source_06",
+    "category": "cross_source",
+    "expected_retrieval_mode": "graph",
+    "question": "Outline a public-document workflow from an RDKit molecule to a prepared ligand and an AutoDock Vina docking output.",
+    "gold_source_ids": ["rdkit_getting_started", "vina_basic_docking"],
+    "claims": [{"claim_id": "rdkit_vina_workflow", "term_groups": [["rdkit"], ["3d", "conformer"], ["pdbqt"], ["vina", "docking"]]}]
+  },
+  {
+    "question_id": "cross_source_07",
+    "category": "cross_source",
+    "expected_retrieval_mode": "graph",
+    "question": "How are reference-based deviation and per-atom fluctuation connected in the documented GROMACS analysis workflow?",
+    "gold_source_ids": ["gromacs_rms", "gromacs_rmsf"],
+    "claims": [{"claim_id": "rms_rmsf_relation", "term_groups": [["rmsd", "deviation"], ["reference"], ["rmsf", "fluctuation"], ["atomic positions", "atoms"]]}]
+  },
+  {
+    "question_id": "cross_source_08",
+    "category": "cross_source",
+    "expected_retrieval_mode": "graph",
+    "question": "Explain the workflow difference between AutoDock4 maps and AutoDock Vina-computed maps before molecular docking.",
+    "gold_source_ids": ["vina_basic_docking", "vina_python_docking"],
+    "claims": [{"claim_id": "forcefield_map_workflow", "term_groups": [["autodock4", "ad4"], ["autogrid4", "precalculate"], ["vina"], ["compute vina maps", "compute_vina_maps", "internally"]]}]
+  },
+  {
+    "question_id": "cross_source_09",
+    "category": "cross_source",
+    "expected_retrieval_mode": "graph",
+    "question": "What steps support an AutoDock Vina batch-screening workflow when ligand atom types are not known in advance?",
+    "gold_source_ids": ["vina_python_docking"],
+    "claims": [{"claim_id": "batch_maps", "term_groups": [["before", "no ligand", "not initialized"], ["22", "all atom types"], ["batch", "virtual screening"]]}]
+  },
+  {
+    "question_id": "cross_source_10",
+    "category": "cross_source",
+    "expected_retrieval_mode": "graph",
+    "question": "After molecular docking, what documented analysis steps can separately assess pose ranking, structural deviation, and atomic fluctuation?",
+    "gold_source_ids": ["vina_python_docking", "gromacs_rms", "gromacs_rmsf"],
+    "claims": [{"claim_id": "post_docking_chain", "term_groups": [["pose", "poses"], ["gmx rms", "rmsd"], ["gmx rmsf", "fluctuation"]]}]
+  },
+  {
+    "question_id": "boundary_02",
+    "category": "boundary",
+    "expected_retrieval_mode": "graph",
+    "question": "Does an AutoDock Vina docking score prove that experimental binding occurs? State only what the cited documentation establishes.",
+    "gold_source_ids": ["vina_basic_docking", "vina_python_docking"],
+    "claims": [{"claim_id": "score_not_experiment", "term_groups": [["does not", "not", "no"], ["prove", "establish", "guarantee"], ["experimental"]]}]
+  },
+  {
+    "question_id": "boundary_03",
+    "category": "boundary",
+    "expected_retrieval_mode": "graph",
+    "question": "Does increasing Vina exhaustiveness from 8 to 32 guarantee the correct docking pose?",
+    "gold_source_ids": ["vina_basic_docking"],
+    "claims": [{"claim_id": "exhaustiveness_not_guarantee", "term_groups": [["does not", "not", "no"], ["guarantee"], ["consistent", "consistency"]]}]
+  },
+  {
+    "question_id": "boundary_04",
+    "category": "boundary",
+    "expected_retrieval_mode": "graph",
+    "question": "Does a low RMSD by itself prove that a protein-ligand complex is dynamically stable?",
+    "gold_source_ids": ["gromacs_rms", "gromacs_rmsf", "gromacs_commands"],
+    "claims": [{"claim_id": "rmsd_not_proof", "term_groups": [["does not", "not", "no"], ["prove", "guarantee", "establish"], ["rmsd"], ["other", "rmsf", "gyration", "hydrogen bond"]]}]
+  },
+  {
+    "question_id": "boundary_05",
+    "category": "boundary",
+    "expected_retrieval_mode": "graph",
+    "question": "Does successful RDKit SMILES parsing prove that a molecule is drug-like or safe?",
+    "gold_source_ids": ["rdkit_getting_started"],
+    "claims": [{"claim_id": "parse_not_drug_validation", "term_groups": [["does not", "not", "no"], ["prove", "guarantee", "establish"], ["parse", "molfromsmiles"], ["drug like", "drug-like", "safe", "safety"]]}]
   }
 ]

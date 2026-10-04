@@ -26,10 +26,33 @@ APP_NAME = (
     "Personal GraphRAG Scientific Computing API"
 )
 
-APP_VERSION = "0.4.1"
+APP_VERSION = "0.5.0"
 
 
 runtime = ApiRuntime.create_default()
+
+
+def _insecure_local_mode_enabled() -> bool:
+    """Return whether the explicit local-development auth bypass is enabled."""
+
+    return os.getenv("GRAPH_RAG_ALLOW_INSECURE_LOCAL", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def validate_security_configuration() -> None:
+    """Fail closed unless an API key or explicit local bypass is configured."""
+
+    if os.getenv("GRAPH_RAG_API_KEY", "").strip():
+        return
+    if _insecure_local_mode_enabled():
+        return
+    raise RuntimeError(
+        "GRAPH_RAG_API_KEY is required. For loopback-only local development, "
+        "explicitly set GRAPH_RAG_ALLOW_INSECURE_LOCAL=true."
+    )
 
 
 @asynccontextmanager
@@ -41,6 +64,7 @@ async def lifespan(
     stop it cleanly when the API shuts down.
     """
 
+    validate_security_configuration()
     app.state.runtime = runtime
 
     startup_result = runtime.start()
@@ -87,11 +111,16 @@ app.add_middleware(
 def require_api_key(
     x_api_key: str | None = Header(default=None),
 ) -> None:
-    """Protect job data when GRAPH_RAG_API_KEY is configured."""
+    """Require the configured API key unless local bypass is explicit."""
 
     expected = os.getenv("GRAPH_RAG_API_KEY", "").strip()
     if not expected:
-        return
+        if _insecure_local_mode_enabled():
+            return
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="API authentication is not configured.",
+        )
 
     if x_api_key is None or not hmac.compare_digest(x_api_key, expected):
         raise HTTPException(
@@ -137,6 +166,7 @@ def health_check(
 )
 def runtime_status(
     request: Request,
+    _: None = Depends(require_api_key),
 ) -> dict:
     """
     Return dispatcher, queue, tool, and named-agent status.
@@ -153,6 +183,7 @@ def runtime_status(
 )
 def list_capabilities(
     request: Request,
+    _: None = Depends(require_api_key),
 ) -> dict:
     """
     Return registered computational domains and tools.
@@ -181,6 +212,7 @@ def list_capabilities(
 )
 def list_agents(
     request: Request,
+    _: None = Depends(require_api_key),
 ) -> dict:
     """
     Return registered lightweight named-agent roles.

@@ -30,6 +30,8 @@ The benchmark downloads official public RDKit, AutoDock Vina, and GROMACS docume
 
 Representative result:
 
+The following result is the original six-question pilot. It is retained for historical reproducibility and is not representative evidence for the current 32-question suite.
+
 | Metric | Vector RAG | GraphRAG |
 |---|---:|---:|
 | Claim coverage | **0.667** | 0.639 |
@@ -37,7 +39,7 @@ Representative result:
 | Average answer tokens | **178** | 208 |
 | Average generation latency | **23.1 s** | 28.0 s |
 
-Vector RAG performed better on direct questions. Graph augmentation showed selective benefit on the boundary question. The result supports conditional routing but is too small for a universal conclusion.
+Vector RAG performed better on direct questions. Graph augmentation showed selective benefit on the single boundary question. The result motivated a larger evaluation; it does not support a general conclusion.
 
 Full methodology: [evaluation/public_graphrag/README.md](../evaluation/public_graphrag/README.md).
 

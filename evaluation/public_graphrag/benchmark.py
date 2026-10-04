@@ -10,7 +10,7 @@ import urllib.request
 
 from html.parser import HTMLParser
 from pathlib import Path
-from statistics import mean
+from statistics import mean, pstdev
 from typing import Any
 
 from ollama import Client
@@ -18,6 +18,7 @@ from ollama import Client
 from app.chunking.text_chunker import TextChunker
 from app.embeddings.ollama_embeddings import OllamaEmbeddingService
 from app.graphrag.graphrag_service import GraphRAGService
+from app.graphrag.retrieval_router import RetrievalRouter
 from app.knowledge_graph.graph_builder import KnowledgeGraphBuilder
 from app.knowledge_graph.graph_store import KnowledgeGraphStore
 from app.retrieval.retrieval_service import RetrievalService
@@ -273,25 +274,51 @@ def answer_with_graph(
     return result, dict(generator.last_metrics)
 
 
+METRICS = (
+    "claim_coverage",
+    "prompt_tokens",
+    "answer_tokens",
+    "generation_latency_ms",
+)
+
+
+def summarize_metrics(records: list[dict]) -> dict:
+    summary = {}
+    for metric in METRICS:
+        values = [record[metric] for record in records]
+        summary[metric] = mean(values)
+        summary[f"{metric}_stddev"] = pstdev(values)
+    return summary
+
+
 def aggregate(rows: list[dict], mode: str) -> dict:
-    return {
-        "claim_coverage": mean(row[mode]["claim_coverage"] for row in rows),
-        "prompt_tokens": mean(row[mode]["prompt_tokens"] for row in rows),
-        "answer_tokens": mean(row[mode]["answer_tokens"] for row in rows),
-        "generation_latency_ms": mean(
-            row[mode]["generation_latency_ms"] for row in rows
-        ),
-    }
+    runs = [run for row in rows for run in row[mode]["runs"]]
+    return summarize_metrics(runs)
 
 
 def aggregate_runs(runs: list[dict]) -> dict:
+    return summarize_metrics(runs)
+
+
+def routing_summary(rows: list[dict]) -> dict:
+    labels = ("vector", "graph")
+    confusion_matrix = {
+        expected: {selected: 0 for selected in labels} for expected in labels
+    }
+    for row in rows:
+        confusion_matrix[row["expected_retrieval_mode"]][
+            row["router_decision"]["selected_mode"]
+        ] += 1
+    correct = sum(
+        row["expected_retrieval_mode"]
+        == row["router_decision"]["selected_mode"]
+        for row in rows
+    )
     return {
-        "claim_coverage": mean(run["claim_coverage"] for run in runs),
-        "prompt_tokens": mean(run["prompt_tokens"] for run in runs),
-        "answer_tokens": mean(run["answer_tokens"] for run in runs),
-        "generation_latency_ms": mean(
-            run["generation_latency_ms"] for run in runs
-        ),
+        "correct": correct,
+        "questions": len(rows),
+        "accuracy": correct / len(rows),
+        "confusion_matrix": confusion_matrix,
     }
 
 
@@ -350,6 +377,7 @@ def run_benchmark(
         graph_path.unlink()
     graph = KnowledgeGraphStore(str(graph_path))
     KnowledgeGraphBuilder(graph).build_drug_discovery_workflow()
+    router = RetrievalRouter(GraphRAGService._QUESTION_ENTITY_ALIASES)
     generator = MeasuredGenerator(model=model, host=host)
     generator.generate(
         "Is this a benchmark warm-up?",
@@ -358,6 +386,7 @@ def run_benchmark(
     rows = []
 
     for question_index, question in enumerate(questions):
+        router_decision = router.route(question["question"])
         retrieval_started = time.perf_counter()
         chunks = retrieval.search(
             query=question["question"],
@@ -424,6 +453,12 @@ def run_benchmark(
                 "question_id": question["question_id"],
                 "category": question["category"],
                 "question": question["question"],
+                "expected_retrieval_mode": question["expected_retrieval_mode"],
+                "router_decision": router_decision.to_dict(),
+                "router_correct": (
+                    router_decision.selected_mode
+                    == question["expected_retrieval_mode"]
+                ),
                 "gold_source_ids": sorted(gold_sources),
                 "retrieved_source_ids": sorted(source_ids),
                 "retrieval_source_recall": source_recall,
@@ -464,6 +499,7 @@ def run_benchmark(
             ),
             "vector": aggregate(rows, "vector"),
             "graphrag": aggregate(rows, "graphrag"),
+            "router": routing_summary(rows),
             "by_category": category_summary(rows),
         },
         "questions": rows,
@@ -479,13 +515,20 @@ def run_benchmark(
         fieldnames = [
             "question_id",
             "category",
+            "expected_retrieval_mode",
+            "selected_retrieval_mode",
+            "router_correct",
             "retrieval_source_recall",
             "vector_claim_coverage",
+            "vector_claim_coverage_stddev",
             "graphrag_claim_coverage",
+            "graphrag_claim_coverage_stddev",
             "vector_prompt_tokens",
             "graphrag_prompt_tokens",
             "vector_latency_ms",
+            "vector_latency_ms_stddev",
             "graphrag_latency_ms",
+            "graphrag_latency_ms_stddev",
         ]
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
@@ -494,13 +537,30 @@ def run_benchmark(
                 {
                     "question_id": row["question_id"],
                     "category": row["category"],
+                    "expected_retrieval_mode": row["expected_retrieval_mode"],
+                    "selected_retrieval_mode": row["router_decision"][
+                        "selected_mode"
+                    ],
+                    "router_correct": row["router_correct"],
                     "retrieval_source_recall": row["retrieval_source_recall"],
                     "vector_claim_coverage": row["vector"]["claim_coverage"],
+                    "vector_claim_coverage_stddev": row["vector"][
+                        "claim_coverage_stddev"
+                    ],
                     "graphrag_claim_coverage": row["graphrag"]["claim_coverage"],
+                    "graphrag_claim_coverage_stddev": row["graphrag"][
+                        "claim_coverage_stddev"
+                    ],
                     "vector_prompt_tokens": row["vector"]["prompt_tokens"],
                     "graphrag_prompt_tokens": row["graphrag"]["prompt_tokens"],
                     "vector_latency_ms": row["vector"]["generation_latency_ms"],
+                    "vector_latency_ms_stddev": row["vector"][
+                        "generation_latency_ms_stddev"
+                    ],
                     "graphrag_latency_ms": row["graphrag"]["generation_latency_ms"],
+                    "graphrag_latency_ms_stddev": row["graphrag"][
+                        "generation_latency_ms_stddev"
+                    ],
                 }
             )
 
@@ -514,7 +574,7 @@ def main() -> None:
     parser.add_argument("--runtime", type=Path, default=DEFAULT_RUNTIME)
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS)
     parser.add_argument(
-        "--model", default=os.getenv("GRAPH_RAG_BENCHMARK_MODEL", "deepseek-coder:6.7b")
+        "--model", default=os.getenv("GRAPH_RAG_BENCHMARK_MODEL", "qwen3:8b")
     )
     parser.add_argument(
         "--host", default=os.getenv("OLLAMA_HOST", "http://localhost:11434")

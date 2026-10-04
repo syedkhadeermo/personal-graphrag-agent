@@ -1,0 +1,7 @@
+services:
+  graphrag-api:
+    volumes:
+      - type: bind
+        source: ${GRAPH_RAG_SSH_DIR:?Set GRAPH_RAG_SSH_DIR to a dedicated SSH directory}
+        target: /ssh-host
+        read_only: true
