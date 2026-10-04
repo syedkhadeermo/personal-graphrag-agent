@@ -346,6 +346,47 @@ def pending_manual_review() -> dict:
     }
 
 
+def run_router_benchmark(results_directory: Path) -> dict:
+    """Measure the deterministic router without retrieval or generation models."""
+
+    gold_path = ROOT / "gold_questions.json"
+    questions = load_json(gold_path)
+    router = RetrievalRouter(GraphRAGService._QUESTION_ENTITY_ALIASES)
+    rows = []
+
+    for question in questions:
+        decision = router.route(question["question"])
+        rows.append(
+            {
+                "question_id": question["question_id"],
+                "category": question["category"],
+                "expected_retrieval_mode": question["expected_retrieval_mode"],
+                "router_decision": decision.to_dict(),
+                "router_correct": (
+                    decision.selected_mode
+                    == question["expected_retrieval_mode"]
+                ),
+            }
+        )
+
+    payload = {
+        "protocol": {
+            "questions": len(rows),
+            "gold_questions_sha256": hashlib.sha256(
+                gold_path.read_bytes()
+            ).hexdigest(),
+            "scope": "deterministic routing only; no retrieval or generation",
+        },
+        "summary": routing_summary(rows),
+        "questions": rows,
+    }
+    results_directory.mkdir(parents=True, exist_ok=True)
+    (results_directory / "router_results.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8"
+    )
+    return payload
+
+
 def run_benchmark(
     runtime_directory: Path,
     results_directory: Path,
@@ -583,17 +624,25 @@ def main() -> None:
     parser.add_argument("--graph-max-depth", type=int, default=6)
     parser.add_argument("--relevance-threshold", type=float, default=0.85)
     parser.add_argument("--repetitions", type=int, default=3)
-    arguments = parser.parse_args()
-    payload = run_benchmark(
-        runtime_directory=arguments.runtime,
-        results_directory=arguments.results,
-        model=arguments.model,
-        host=arguments.host,
-        top_k=arguments.top_k,
-        graph_max_depth=arguments.graph_max_depth,
-        relevance_threshold=arguments.relevance_threshold,
-        repetitions=arguments.repetitions,
+    parser.add_argument(
+        "--router-only",
+        action="store_true",
+        help="Measure routing labels without downloading sources or using models.",
     )
+    arguments = parser.parse_args()
+    if arguments.router_only:
+        payload = run_router_benchmark(arguments.results)
+    else:
+        payload = run_benchmark(
+            runtime_directory=arguments.runtime,
+            results_directory=arguments.results,
+            model=arguments.model,
+            host=arguments.host,
+            top_k=arguments.top_k,
+            graph_max_depth=arguments.graph_max_depth,
+            relevance_threshold=arguments.relevance_threshold,
+            repetitions=arguments.repetitions,
+        )
     print(json.dumps(payload["summary"], indent=2))
 
 

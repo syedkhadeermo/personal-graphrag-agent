@@ -54,7 +54,15 @@ def test_explicit_local_bypass_allows_unauthenticated_discovery() -> None:
 
 def test_startup_security_configuration_is_fail_closed() -> None:
     with patch.dict("os.environ", {}, clear=True):
-        with pytest.raises(RuntimeError, match="GRAPH_RAG_API_KEY is required"):
+        with pytest.raises(RuntimeError, match="GRAPH_RAG_API_KEY must be set"):
+            validate_security_configuration()
+
+    with patch.dict(
+        "os.environ",
+        {"GRAPH_RAG_API_KEY": "replace-with-a-long-random-secret"},
+        clear=True,
+    ):
+        with pytest.raises(RuntimeError, match="non-placeholder secret"):
             validate_security_configuration()
 
     with patch.dict("os.environ", {"GRAPH_RAG_API_KEY": "test-secret"}, clear=True):
@@ -66,6 +74,21 @@ def test_startup_security_configuration_is_fail_closed() -> None:
         clear=True,
     ):
         validate_security_configuration()
+
+
+def test_placeholder_api_key_is_never_accepted() -> None:
+    with patch.dict(
+        "os.environ",
+        {"GRAPH_RAG_API_KEY": "replace-with-a-long-random-secret"},
+        clear=True,
+    ):
+        client = TestClient(app)
+        response = client.get(
+            "/capabilities",
+            headers={"X-API-Key": "replace-with-a-long-random-secret"},
+        )
+
+    assert response.status_code == 503
 
 
 def test_local_cors_origin_is_allowed() -> None:

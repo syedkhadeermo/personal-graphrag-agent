@@ -28,6 +28,12 @@ APP_NAME = (
 
 APP_VERSION = "0.5.0"
 
+INSECURE_API_KEY_VALUES = frozenset(
+    {
+        "replace-with-a-long-random-secret",
+    }
+)
+
 
 runtime = ApiRuntime.create_default()
 
@@ -42,15 +48,25 @@ def _insecure_local_mode_enabled() -> bool:
     }
 
 
+def _configured_api_key() -> str:
+    """Return a usable API key, or an empty string for unsafe configuration."""
+
+    api_key = os.getenv("GRAPH_RAG_API_KEY", "").strip()
+    if api_key.casefold() in INSECURE_API_KEY_VALUES:
+        return ""
+    return api_key
+
+
 def validate_security_configuration() -> None:
     """Fail closed unless an API key or explicit local bypass is configured."""
 
-    if os.getenv("GRAPH_RAG_API_KEY", "").strip():
+    if _configured_api_key():
         return
     if _insecure_local_mode_enabled():
         return
     raise RuntimeError(
-        "GRAPH_RAG_API_KEY is required. For loopback-only local development, "
+        "GRAPH_RAG_API_KEY must be set to a non-placeholder secret. Generate "
+        "one with `openssl rand -hex 32`. For loopback-only local development, "
         "explicitly set GRAPH_RAG_ALLOW_INSECURE_LOCAL=true."
     )
 
@@ -113,7 +129,7 @@ def require_api_key(
 ) -> None:
     """Require the configured API key unless local bypass is explicit."""
 
-    expected = os.getenv("GRAPH_RAG_API_KEY", "").strip()
+    expected = _configured_api_key()
     if not expected:
         if _insecure_local_mode_enabled():
             return

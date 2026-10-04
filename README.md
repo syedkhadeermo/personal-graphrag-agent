@@ -1,4 +1,4 @@
-# Agentic GraphRAG for Scientific & Engineering Computing
+# Personal GraphRAG Agent
 
 [![CI](https://github.com/syedkhadeermo/personal-graphrag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/syedkhadeermo/personal-graphrag-agent/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -6,6 +6,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Personal GraphRAG Agent is a Python platform for answering technical questions and running long scientific-computing jobs. It chooses simple vector retrieval for direct questions and bounded graph traversal when relationships or workflow context matter. The same orchestration layer can dispatch chemistry, CAD/CFD, structural-analysis, and defensive-security tools to local or remote workers.
+
+### Origin
+
+I built the first version to support a real, multi-stage engineering R&D workflow that joined technical evidence with CAD and CFD execution. I then generalized the orchestration, retrieval, authorization, and worker layers so the same system could support other scientific-computing domains without embedding private project data in the repository.
 
 ![FreeCAD to OpenFOAM to Blender demonstration](docs/assets/flow_channel_animation.gif)
 
@@ -16,21 +20,23 @@ Docker is the shortest path to a running API. It requires an explicit API key an
 ```bash
 git clone https://github.com/syedkhadeermo/personal-graphrag-agent.git
 cd personal-graphrag-agent
-cp .env.example .env
+export GRAPH_RAG_API_KEY="$(openssl rand -hex 32)"
 docker compose up --build -d
 curl http://127.0.0.1:8000/health
-curl -H "X-API-Key: replace-with-a-long-random-secret" \
+curl -H "X-API-Key: $GRAPH_RAG_API_KEY" \
   http://127.0.0.1:8000/capabilities
 ```
 
-In PowerShell, use `Copy-Item .env.example .env`, then call the protected endpoint with:
+In PowerShell, generate a key with Python, then start Compose and call the protected endpoint:
 
 ```powershell
+$env:GRAPH_RAG_API_KEY = python -c "import secrets; print(secrets.token_hex(32))"
+docker compose up --build -d
 Invoke-RestMethod http://127.0.0.1:8000/capabilities `
-  -Headers @{"X-API-Key"="replace-with-a-long-random-secret"}
+  -Headers @{"X-API-Key"=$env:GRAPH_RAG_API_KEY}
 ```
 
-Replace the example key in `.env` before starting a shared or remotely reachable service. Interactive API documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+The application rejects the placeholder value formerly shown in `.env.example`. Save the generated key securely if you want to reuse it after closing the shell. Interactive API documentation is available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
 ## Design goals
 
@@ -50,9 +56,10 @@ This is not a chat wrapper around a vector database. It separates retrieval, aut
 
 | Evidence | Result |
 |---|---:|
-| Portable CI suite | **85 passed, 15 skipped** |
+| Portable CI suite | **87 passed, 15 skipped** |
 | Ruff | **All checks passed** |
-| Public GraphRAG benchmark | 32 gold questions, expected-route labels, router accuracy, confusion matrix, and per-run dispersion |
+| Deterministic router benchmark | **32/32 expected routes (100%)**; vector 17/17, graph 15/15 |
+| Expanded Vector RAG vs GraphRAG run | Pending a complete, manually reviewed run with the documented general model |
 | CAD/CFD demo | FreeCAD → OpenFOAM → Blender workflow completed |
 | Structural FEA | CalculiX asynchronous execution path completed with return code 0 |
 | AWS portfolio deployment | 17 resources created, verified, drift-checked, and destroyed |
@@ -61,17 +68,19 @@ These results demonstrate engineering behavior, not universal GraphRAG superiori
 
 ## Run a complete portable job
 
-Submit an RDKit descriptor job using the API key stored in `.env`:
+Submit an RDKit descriptor job using the generated API key. Replace the marked
+value with a public, nonconfidential test structure; never paste an unpublished
+candidate into a demo or issue:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/jobs \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: replace-with-a-long-random-secret" \
+  -H "X-API-Key: $GRAPH_RAG_API_KEY" \
   -d '{
     "domain": "drug_discovery",
     "tool": "rdkit_descriptors",
     "request": {
-      "smiles": "CC(=O)Oc1ccccc1C(=O)O",
+      "smiles": "<PUBLIC_NONCONFIDENTIAL_SMILES>",
       "timeout": 60
     },
     "max_attempts": 1
@@ -94,7 +103,7 @@ Poll the persisted result:
 
 ```bash
 curl \
-  -H "X-API-Key: replace-with-a-long-random-secret" \
+  -H "X-API-Key: $GRAPH_RAG_API_KEY" \
   http://127.0.0.1:8000/jobs/<job-id>
 ```
 
@@ -197,6 +206,8 @@ The repository includes a 32-question benchmark built only from public RDKit, Au
 
 The runner reports router accuracy and a confusion matrix, retrieval source recall, claim coverage, token use, latency, and population standard deviation across repeated runs. Vector and GraphRAG generation order alternates to reduce ordering bias.
 
+The deterministic router has been executed against all 32 expected-route labels: **32/32 correct (100%)**. Its confusion matrix is 17 vector questions routed to vector, 15 graph questions routed to graph, and zero cross-route errors. The [machine-readable router result](evaluation/public_graphrag/published/router_results.json) records every decision and the SHA-256 identity of the gold-question file. These labels belong to the public development suite rather than an independently held-out set, so this result verifies the present routing rules; it is not a generalization claim.
+
 The previously published six-question run is retained in [Verified workflows](docs/verified-workflows.md) as a clearly labelled historical pilot, not as evidence for a general performance claim. The expanded suite must be run and manually reviewed before new model-comparison numbers are published.
 
 See the [benchmark methodology](evaluation/public_graphrag/README.md) for reproducibility and interpretation limits.
@@ -218,6 +229,7 @@ Job states include:
 stateDiagram-v2
     [*] --> QUEUED
     QUEUED --> RUNNING
+    RUNNING --> RUNNING: retryable failure / RETRYING event
     RUNNING --> VALIDATING
     VALIDATING --> COMPLETED
     RUNNING --> FAILED

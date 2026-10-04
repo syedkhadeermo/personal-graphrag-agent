@@ -6,6 +6,7 @@ from evaluation.public_graphrag.benchmark import (
     evidence_audit,
     load_json,
     routing_summary,
+    run_router_benchmark,
     score_answer,
     summarize_metrics,
 )
@@ -74,6 +75,21 @@ def test_routing_summary_builds_confusion_matrix() -> None:
     assert summary["accuracy"] == 0.5
     assert summary["confusion_matrix"]["vector"]["vector"] == 1
     assert summary["confusion_matrix"]["graph"]["vector"] == 1
+
+
+def test_current_gold_suite_router_result_is_reproducible(tmp_path: Path) -> None:
+    payload = run_router_benchmark(tmp_path)
+
+    assert payload["summary"] == {
+        "correct": 32,
+        "questions": 32,
+        "accuracy": 1.0,
+        "confusion_matrix": {
+            "vector": {"vector": 17, "graph": 0},
+            "graph": {"vector": 0, "graph": 15},
+        },
+    }
+    assert (tmp_path / "router_results.json").is_file()
 
 
 def test_claim_scoring_requires_every_term_group() -> None:

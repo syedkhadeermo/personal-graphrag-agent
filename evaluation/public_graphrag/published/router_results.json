@@ -1,0 +1,585 @@
+{
+  "protocol": {
+    "questions": 32,
+    "gold_questions_sha256": "a9822743a4e8a7ae4c426ac08983c7b9ae23e707873bd38c7ddffddbc0946799",
+    "scope": "deterministic routing only; no retrieval or generation"
+  },
+  "summary": {
+    "correct": 32,
+    "questions": 32,
+    "accuracy": 1.0,
+    "confusion_matrix": {
+      "vector": {
+        "vector": 17,
+        "graph": 0
+      },
+      "graph": {
+        "vector": 0,
+        "graph": 15
+      }
+    }
+  },
+  "questions": [
+    {
+      "question_id": "direct_rdkit_01",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question"
+        ],
+        "entity_nodes": [
+          "rdkit"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_vina_01",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question"
+        ],
+        "entity_nodes": [
+          "autodock_vina"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_gromacs_01",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question"
+        ],
+        "entity_nodes": [
+          "rmsf"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_01",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language",
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "autodock_vina",
+          "docking_pose",
+          "gromacs"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_02",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.75,
+        "signals": [
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "gromacs",
+          "radius_of_gyration",
+          "rmsd",
+          "rmsf"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "boundary_01",
+      "category": "boundary",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.9,
+        "signals": [
+          "boundary_question",
+          "direct_evidence_question"
+        ],
+        "entity_nodes": [
+          "protein_ligand_complex"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_rdkit_02",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question"
+        ],
+        "entity_nodes": [
+          "rdkit"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_rdkit_03",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question"
+        ],
+        "entity_nodes": [
+          "rdkit"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_rdkit_04",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.65,
+        "signals": [
+          "conservative_vector_default"
+        ],
+        "entity_nodes": [
+          "rdkit"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_rdkit_05",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question"
+        ],
+        "entity_nodes": [
+          "rdkit"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_vina_02",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.65,
+        "signals": [
+          "conservative_vector_default"
+        ],
+        "entity_nodes": [
+          "autodock_vina"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_vina_03",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.65,
+        "signals": [
+          "conservative_vector_default"
+        ],
+        "entity_nodes": []
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_vina_04",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question"
+        ],
+        "entity_nodes": []
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_vina_05",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.65,
+        "signals": [
+          "conservative_vector_default"
+        ],
+        "entity_nodes": []
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_vina_06",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.65,
+        "signals": [
+          "conservative_vector_default"
+        ],
+        "entity_nodes": []
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_vina_07",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language",
+          "direct_evidence_question"
+        ],
+        "entity_nodes": []
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_gromacs_02",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.65,
+        "signals": [
+          "conservative_vector_default"
+        ],
+        "entity_nodes": []
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_gromacs_03",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question"
+        ],
+        "entity_nodes": [
+          "rmsf"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_gromacs_04",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question",
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "gromacs",
+          "radius_of_gyration"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "direct_gromacs_05",
+      "category": "direct",
+      "expected_retrieval_mode": "vector",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "vector",
+        "confidence": 0.85,
+        "signals": [
+          "direct_evidence_question"
+        ],
+        "entity_nodes": [
+          "rmsf"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_03",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language",
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "autodock_vina",
+          "molecular_docking"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_04",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language",
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "autodock_vina",
+          "docking_pose"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_05",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language",
+          "relationship_language",
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "molecular_dynamics",
+          "rmsd",
+          "rmsf"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_06",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language",
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "autodock_vina",
+          "rdkit"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_07",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language",
+          "relationship_language"
+        ],
+        "entity_nodes": [
+          "gromacs"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_08",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language",
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "autodock_vina",
+          "molecular_docking"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_09",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language"
+        ],
+        "entity_nodes": [
+          "autodock_vina"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "cross_source_10",
+      "category": "cross_source",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.85,
+        "signals": [
+          "workflow_language"
+        ],
+        "entity_nodes": [
+          "molecular_docking"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "boundary_02",
+      "category": "boundary",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.9,
+        "signals": [
+          "boundary_question",
+          "direct_evidence_question",
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "autodock_vina",
+          "binding_affinity"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "boundary_03",
+      "category": "boundary",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.9,
+        "signals": [
+          "workflow_language",
+          "boundary_question"
+        ],
+        "entity_nodes": [
+          "docking_pose"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "boundary_04",
+      "category": "boundary",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.9,
+        "signals": [
+          "boundary_question",
+          "multiple_question_entities"
+        ],
+        "entity_nodes": [
+          "protein_ligand_complex",
+          "rmsd"
+        ]
+      },
+      "router_correct": true
+    },
+    {
+      "question_id": "boundary_05",
+      "category": "boundary",
+      "expected_retrieval_mode": "graph",
+      "router_decision": {
+        "requested_mode": "auto",
+        "selected_mode": "graph",
+        "confidence": 0.9,
+        "signals": [
+          "boundary_question"
+        ],
+        "entity_nodes": [
+          "rdkit"
+        ]
+      },
+      "router_correct": true
+    }
+  ]
+}

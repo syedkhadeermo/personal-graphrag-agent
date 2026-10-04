@@ -17,7 +17,7 @@ The repository contains strong evidence for the first two levels and workflow-de
 
 The verified CI snapshot completed:
 
-- 80 passing tests
+- 87 passing tests
 - 15 skipped external tests
 - Ruff checks with no errors
 - Python 3.12 execution
@@ -28,7 +28,14 @@ Skipped tests require local models, private data, WSL, or an SSH-accessible scie
 
 The benchmark downloads official public RDKit, AutoDock Vina, and GROMACS documentation, records hashes of extracted sources, uses real Chroma retrieval, and keeps gold claims separate from the curated graph.
 
-Representative result:
+The deterministic router was executed against the current 32-question public development suite:
+
+| Expected route | Selected vector | Selected graph |
+|---|---:|---:|
+| Vector | **17** | 0 |
+| Graph | 0 | **15** |
+
+Router accuracy was **32/32 (100%)**. The [machine-readable result](../evaluation/public_graphrag/published/router_results.json) preserves every decision and the SHA-256 identity of the gold-question file. Because the expected-route labels are part of the current development suite rather than an independently held-out dataset, this verifies the implemented routing rules but does not establish generalization to unseen questions.
 
 The following result is the original six-question pilot. It is retained for historical reproducibility and is not representative evidence for the current 32-question suite.
 

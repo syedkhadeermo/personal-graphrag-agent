@@ -32,6 +32,22 @@ ollama pull deepseek-coder:6.7b
 
 From the repository root:
 
+Measure the deterministic router without downloading the corpus or starting
+Ollama:
+
+```cmd
+python -m evaluation.public_graphrag.benchmark --router-only
+```
+
+The current public development suite produces 32/32 expected routes (17 vector
+and 15 graph, with no cross-route errors). Because this is not an independently
+held-out question set, the result verifies the current rules rather than
+generalization to unseen questions. The committed
+[`published/router_results.json`](published/router_results.json) records every
+decision and the SHA-256 identity of the gold-question file.
+
+Run the complete retrieval and generation comparison with:
+
 ```cmd
 python -m evaluation.public_graphrag.benchmark
 ```
@@ -51,6 +67,7 @@ python -m evaluation.public_graphrag.benchmark ^
 
 Outputs:
 
+- `evaluation/public_graphrag/results/router_results.json` for `--router-only`
 - `evaluation/public_graphrag/results/benchmark_results.json`
 - `evaluation/public_graphrag/results/benchmark_summary.csv`
 
