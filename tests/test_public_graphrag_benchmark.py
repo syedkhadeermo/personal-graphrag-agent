@@ -9,6 +9,7 @@ from evaluation.public_graphrag.benchmark import (
     load_json,
     routing_summary,
     run_router_benchmark,
+    run_to_run_dispersion,
     score_answer,
     summarize_metrics,
     write_json_atomic,
@@ -42,12 +43,14 @@ def test_metric_summary_reports_population_standard_deviation() -> None:
     records = [
         {
             "claim_coverage": 0.0,
+            "claim_group_coverage": 0.25,
             "prompt_tokens": 10,
             "answer_tokens": 2,
             "generation_latency_ms": 100,
         },
         {
             "claim_coverage": 1.0,
+            "claim_group_coverage": 0.75,
             "prompt_tokens": 20,
             "answer_tokens": 4,
             "generation_latency_ms": 300,
@@ -58,6 +61,8 @@ def test_metric_summary_reports_population_standard_deviation() -> None:
 
     assert summary["claim_coverage"] == 0.5
     assert summary["claim_coverage_stddev"] == 0.5
+    assert summary["claim_group_coverage"] == 0.5
+    assert summary["claim_group_coverage_stddev"] == 0.25
     assert summary["generation_latency_ms_stddev"] == 100
 
 
@@ -134,6 +139,51 @@ def test_claim_scoring_requires_every_term_group() -> None:
     assert not claim_is_present("gmx rms calculates deviation.", claim)
     score = score_answer("gmx rmsf calculates RMSF.", [claim])
     assert score["claim_coverage"] == 1.0
+    assert score["claim_group_coverage"] == 1.0
+
+
+def test_claim_group_coverage_preserves_partial_credit() -> None:
+    claim = {
+        "claim_id": "workflow",
+        "term_groups": [["rdkit"], ["pdbqt"], ["vina"], ["sdf"]],
+    }
+
+    score = score_answer("RDKit prepares input for a Vina workflow.", [claim])
+
+    assert score["claim_coverage"] == 0.0
+    assert score["claim_group_coverage"] == 0.5
+    assert score["claim_groups_passed"] == ["workflow:1", "workflow:3"]
+
+
+def test_run_to_run_dispersion_is_within_question() -> None:
+    rows = [
+        {
+            "vector": {
+                "runs": [
+                    {
+                        "claim_coverage": 0.0,
+                        "claim_group_coverage": 0.5,
+                        "prompt_tokens": 10,
+                        "answer_tokens": 5,
+                        "generation_latency_ms": 100,
+                    },
+                    {
+                        "claim_coverage": 1.0,
+                        "claim_group_coverage": 1.0,
+                        "prompt_tokens": 10,
+                        "answer_tokens": 7,
+                        "generation_latency_ms": 300,
+                    },
+                ]
+            }
+        }
+    ]
+
+    summary = run_to_run_dispersion(rows, "vector")
+
+    assert summary["claim_coverage_stddev_mean"] == 0.5
+    assert summary["answer_tokens_stddev_mean"] == 1
+    assert summary["generation_latency_ms_stddev_mean"] == 100
 
 
 def test_html_extractor_excludes_script_content() -> None:

@@ -70,6 +70,13 @@ The model, host, retrieval settings, repetition count, question-set hash, and
 downloaded source hashes must match the checkpoint. An interruption during a
 question loses only that incomplete question.
 
+The controlled protocol disables model thinking and caps each generation at
+512 tokens. Empty answers fail the current question instead of silently
+entering the aggregate. The output reports both strict all-groups claim
+coverage and fine-grained claim-group coverage. Run-to-run dispersion is
+calculated within each question before being summarized, so question-difficulty
+variation is not mislabeled as repeatability variation.
+
 `qwen3:8b` is the default general-purpose generation model. To compare it with
 the original code-oriented baseline, keep separate output directories:
 
@@ -105,9 +112,10 @@ The generator is warmed once and Vector RAG/GraphRAG execution order alternates
 between repetitions to reduce systematic latency bias. Each answer mode runs
 three times by default. Results retain retrieved chunk IDs, distances, text,
 graph relationships, per-category summaries, and explicit manual-review fields.
-The output includes router accuracy, a vector/graph confusion matrix, and the
-population standard deviation for claim coverage, token use, and latency across
-repetitions. Automatic lexical claim coverage is an audit aid, not a substitute
-for checking contradictions and unsupported statements in every generated
-answer. Do not publish model-comparison figures until both runs have completed
-and every generated answer has been manually reviewed.
+The output includes router accuracy, a vector/graph confusion matrix, pooled
+population dispersion for descriptive completeness, and a separate
+within-question run-to-run dispersion summary. Automatic lexical claim and
+claim-group coverage are audit aids, not substitutes for checking contradictions
+and unsupported statements in every generated answer. Do not publish
+model-comparison figures until the controlled run has completed and every
+generated answer has been manually reviewed.

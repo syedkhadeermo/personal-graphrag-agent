@@ -10,7 +10,7 @@ import urllib.request
 
 from html.parser import HTMLParser
 from pathlib import Path
-from statistics import mean, pstdev
+from statistics import mean, median, pstdev
 from typing import Any
 
 from ollama import Client
@@ -30,6 +30,9 @@ DEFAULT_RUNTIME = ROOT / "runtime"
 DEFAULT_RESULTS = ROOT / "results"
 DOMAIN = "drug_discovery"
 COLLECTION = "public_drug_discovery_benchmark"
+PROTOCOL_VERSION = "2.0"
+GENERATION_THINKING = False
+MAX_GENERATION_TOKENS = 512
 
 
 class MainTextExtractor(HTMLParser):
@@ -107,14 +110,26 @@ class MeasuredGenerator:
         response = self.client.chat(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            options={"temperature": 0, "seed": 42},
+            think=GENERATION_THINKING,
+            options={
+                "temperature": 0,
+                "seed": 42,
+                "num_predict": MAX_GENERATION_TOKENS,
+            },
         )
+        answer = response["message"]["content"].strip()
         self.last_metrics = {
             "generation_latency_ms": (time.perf_counter() - started) * 1000,
             "prompt_tokens": int(response.get("prompt_eval_count", 0) or 0),
             "answer_tokens": int(response.get("eval_count", 0) or 0),
+            "done_reason": response.get("done_reason"),
         }
-        return response["message"]["content"].strip()
+        if not answer:
+            raise RuntimeError(
+                "The generation model returned an empty answer. The current "
+                "question was not checkpointed and can be retried with --resume."
+            )
+        return answer
 
 
 def load_json(path: Path) -> list[dict]:
@@ -135,10 +150,24 @@ def claim_is_present(answer: str, claim: dict) -> bool:
 
 def score_answer(answer: str, claims: list[dict]) -> dict:
     passed = [claim["claim_id"] for claim in claims if claim_is_present(answer, claim)]
+    answer_text = normalized(answer)
+    claim_groups = [
+        (claim["claim_id"], group_index, alternatives)
+        for claim in claims
+        for group_index, alternatives in enumerate(claim["term_groups"], start=1)
+    ]
+    passed_groups = [
+        f"{claim_id}:{group_index}"
+        for claim_id, group_index, alternatives in claim_groups
+        if any(normalized(term) in answer_text for term in alternatives)
+    ]
     return {
         "claims_passed": passed,
         "claims_total": len(claims),
         "claim_coverage": len(passed) / len(claims),
+        "claim_groups_passed": passed_groups,
+        "claim_groups_total": len(claim_groups),
+        "claim_group_coverage": len(passed_groups) / len(claim_groups),
     }
 
 
@@ -276,6 +305,7 @@ def answer_with_graph(
 
 METRICS = (
     "claim_coverage",
+    "claim_group_coverage",
     "prompt_tokens",
     "answer_tokens",
     "generation_latency_ms",
@@ -298,6 +328,20 @@ def aggregate(rows: list[dict], mode: str) -> dict:
 
 def aggregate_runs(runs: list[dict]) -> dict:
     return summarize_metrics(runs)
+
+
+def run_to_run_dispersion(rows: list[dict], mode: str) -> dict:
+    """Summarize within-question variation across repeated generations."""
+
+    summary = {}
+    for metric in METRICS:
+        question_stddevs = [
+            pstdev(run[metric] for run in row[mode]["runs"]) for row in rows
+        ]
+        summary[f"{metric}_stddev_mean"] = mean(question_stddevs)
+        summary[f"{metric}_stddev_median"] = median(question_stddevs)
+        summary[f"{metric}_stddev_max"] = max(question_stddevs)
+    return summary
 
 
 def routing_summary(rows: list[dict]) -> dict:
@@ -369,6 +413,7 @@ def checkpoint_signature(
     """Return the inputs that must match before checkpoint rows can be reused."""
 
     return {
+        "protocol_version": PROTOCOL_VERSION,
         "generation_model": model,
         "ollama_host": host,
         "embedding_model": "nomic-embed-text:latest",
@@ -377,6 +422,8 @@ def checkpoint_signature(
         "relevance_threshold": relevance_threshold,
         "temperature": 0,
         "seed": 42,
+        "thinking_enabled": GENERATION_THINKING,
+        "max_generation_tokens": MAX_GENERATION_TOKENS,
         "repetitions_per_mode": repetitions,
         "gold_questions_sha256": gold_questions_sha256,
         "source_hashes": source_hashes,
@@ -667,6 +714,7 @@ def run_benchmark(
 
     payload = {
         "protocol": {
+            "protocol_version": PROTOCOL_VERSION,
             "corpus": "live official public documentation",
             "embedding_model": "nomic-embed-text:latest",
             "generation_model": model,
@@ -675,6 +723,8 @@ def run_benchmark(
             "relevance_threshold": relevance_threshold,
             "temperature": 0,
             "seed": 42,
+            "thinking_enabled": GENERATION_THINKING,
+            "max_generation_tokens": MAX_GENERATION_TOKENS,
             "questions": len(rows),
             "repetitions_per_mode": repetitions,
             "indexed_chunks": len(chunk_metadata),
@@ -688,6 +738,10 @@ def run_benchmark(
             "graphrag": aggregate(rows, "graphrag"),
             "router": routing_summary(rows),
             "by_category": category_summary(rows),
+            "run_to_run_dispersion": {
+                "vector": run_to_run_dispersion(rows, "vector"),
+                "graphrag": run_to_run_dispersion(rows, "graphrag"),
+            },
         },
         "questions": rows,
     }
@@ -706,8 +760,12 @@ def run_benchmark(
             "retrieval_source_recall",
             "vector_claim_coverage",
             "vector_claim_coverage_stddev",
+            "vector_claim_group_coverage",
+            "vector_claim_group_coverage_stddev",
             "graphrag_claim_coverage",
             "graphrag_claim_coverage_stddev",
+            "graphrag_claim_group_coverage",
+            "graphrag_claim_group_coverage_stddev",
             "vector_prompt_tokens",
             "graphrag_prompt_tokens",
             "vector_latency_ms",
@@ -732,9 +790,21 @@ def run_benchmark(
                     "vector_claim_coverage_stddev": row["vector"][
                         "claim_coverage_stddev"
                     ],
+                    "vector_claim_group_coverage": row["vector"][
+                        "claim_group_coverage"
+                    ],
+                    "vector_claim_group_coverage_stddev": row["vector"][
+                        "claim_group_coverage_stddev"
+                    ],
                     "graphrag_claim_coverage": row["graphrag"]["claim_coverage"],
                     "graphrag_claim_coverage_stddev": row["graphrag"][
                         "claim_coverage_stddev"
+                    ],
+                    "graphrag_claim_group_coverage": row["graphrag"][
+                        "claim_group_coverage"
+                    ],
+                    "graphrag_claim_group_coverage_stddev": row["graphrag"][
+                        "claim_group_coverage_stddev"
                     ],
                     "vector_prompt_tokens": row["vector"]["prompt_tokens"],
                     "graphrag_prompt_tokens": row["graphrag"]["prompt_tokens"],

@@ -17,7 +17,7 @@ The repository contains strong evidence for the first two levels and workflow-de
 
 The verified CI snapshot completed:
 
-- 89 passing tests
+- 91 passing tests
 - 15 skipped external tests
 - Ruff checks with no errors
 - Python 3.12 execution

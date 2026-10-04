@@ -7,10 +7,6 @@
 
 Personal GraphRAG Agent is a Python platform for answering technical questions and running long scientific-computing jobs. It chooses simple vector retrieval for direct questions and bounded graph traversal when relationships or workflow context matter. The same orchestration layer can dispatch chemistry, CAD/CFD, structural-analysis, and defensive-security tools to local or remote workers.
 
-### Origin
-
-I built the first version to support a real, multi-stage engineering R&D workflow that joined technical evidence with CAD and CFD execution. I then generalized the orchestration, retrieval, authorization, and worker layers so the same system could support other scientific-computing domains without embedding private project data in the repository.
-
 ![FreeCAD to OpenFOAM to Blender demonstration](docs/assets/flow_channel_animation.gif)
 
 ## 60-second local demo
@@ -56,7 +52,7 @@ This is not a chat wrapper around a vector database. It separates retrieval, aut
 
 | Evidence | Result |
 |---|---:|
-| Portable CI suite | **89 passed, 15 skipped** |
+| Portable CI suite | **91 passed, 15 skipped** |
 | Ruff | **All checks passed** |
 | Deterministic router benchmark | **32/32 expected routes (100%)**; vector 17/17, graph 15/15 |
 | Expanded Vector RAG vs GraphRAG run | Pending a complete, manually reviewed run with the documented general model |
