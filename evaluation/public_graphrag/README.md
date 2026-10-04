@@ -52,6 +52,24 @@ Run the complete retrieval and generation comparison with:
 python -m evaluation.public_graphrag.benchmark
 ```
 
+For a thermally constrained workstation, pause between generation calls and
+between completed questions:
+
+```cmd
+python -m evaluation.public_graphrag.benchmark ^
+  --model qwen3:8b ^
+  --repetitions 3 ^
+  --generation-cooldown-seconds 15 ^
+  --cooldown-seconds 60 ^
+  --results evaluation/public_graphrag/results/qwen3-8b
+```
+
+The runner writes `benchmark_checkpoint.json` atomically after every completed
+question. If a run is stopped, repeat the identical command with `--resume`.
+The model, host, retrieval settings, repetition count, question-set hash, and
+downloaded source hashes must match the checkpoint. An interruption during a
+question loses only that incomplete question.
+
 `qwen3:8b` is the default general-purpose generation model. To compare it with
 the original code-oriented baseline, keep separate output directories:
 
@@ -68,6 +86,7 @@ python -m evaluation.public_graphrag.benchmark ^
 Outputs:
 
 - `evaluation/public_graphrag/results/router_results.json` for `--router-only`
+- `evaluation/public_graphrag/results/benchmark_checkpoint.json` during a run
 - `evaluation/public_graphrag/results/benchmark_results.json`
 - `evaluation/public_graphrag/results/benchmark_summary.csv`
 

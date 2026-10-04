@@ -2,13 +2,16 @@ from pathlib import Path
 
 from evaluation.public_graphrag.benchmark import (
     MainTextExtractor,
+    checkpoint_signature,
     claim_is_present,
     evidence_audit,
+    load_checkpoint,
     load_json,
     routing_summary,
     run_router_benchmark,
     score_answer,
     summarize_metrics,
+    write_json_atomic,
 )
 from app.graphrag.graphrag_service import GraphRAGService
 from app.knowledge_graph.graph_store import KnowledgeGraphStore
@@ -90,6 +93,36 @@ def test_current_gold_suite_router_result_is_reproducible(tmp_path: Path) -> Non
         },
     }
     assert (tmp_path / "router_results.json").is_file()
+
+
+def test_checkpoint_round_trip_requires_matching_signature(tmp_path: Path) -> None:
+    signature = checkpoint_signature(
+        model="qwen3:8b",
+        host="http://localhost:11434",
+        top_k=6,
+        graph_max_depth=6,
+        relevance_threshold=0.85,
+        repetitions=3,
+        gold_questions_sha256="gold-sha",
+        source_hashes={"source": "source-sha"},
+    )
+    path = tmp_path / "benchmark_checkpoint.json"
+    rows = [{"question_id": "direct_01"}]
+    write_json_atomic(path, {"signature": signature, "questions": rows})
+
+    assert load_checkpoint(path, signature) == rows
+
+
+def test_checkpoint_rejects_changed_run_configuration(tmp_path: Path) -> None:
+    path = tmp_path / "benchmark_checkpoint.json"
+    write_json_atomic(path, {"signature": {"model": "old"}, "questions": []})
+
+    try:
+        load_checkpoint(path, {"model": "new"})
+    except RuntimeError as exc:
+        assert "do not match" in str(exc)
+    else:
+        raise AssertionError("A mismatched checkpoint must not be resumed.")
 
 
 def test_claim_scoring_requires_every_term_group() -> None:

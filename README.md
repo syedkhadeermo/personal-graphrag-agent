@@ -56,7 +56,7 @@ This is not a chat wrapper around a vector database. It separates retrieval, aut
 
 | Evidence | Result |
 |---|---:|
-| Portable CI suite | **87 passed, 15 skipped** |
+| Portable CI suite | **89 passed, 15 skipped** |
 | Ruff | **All checks passed** |
 | Deterministic router benchmark | **32/32 expected routes (100%)**; vector 17/17, graph 15/15 |
 | Expanded Vector RAG vs GraphRAG run | Pending a complete, manually reviewed run with the documented general model |
@@ -204,7 +204,7 @@ Every response records:
 
 The repository includes a 32-question benchmark built only from public RDKit, AutoDock Vina, and GROMACS documentation. It contains 17 direct, 10 cross-source, and 5 boundary questions. Every question has an expected retrieval route, independently maintained gold sources, and claim-level checks.
 
-The runner reports router accuracy and a confusion matrix, retrieval source recall, claim coverage, token use, latency, and population standard deviation across repeated runs. Vector and GraphRAG generation order alternates to reduce ordering bias.
+The runner reports router accuracy and a confusion matrix, retrieval source recall, claim coverage, token use, latency, and population standard deviation across repeated runs. Vector and GraphRAG generation order alternates to reduce ordering bias. Long runs checkpoint after every completed question and can resume with validated model, corpus, and protocol settings; optional generation and between-question cooldowns support thermally constrained local hardware.
 
 The deterministic router has been executed against all 32 expected-route labels: **32/32 correct (100%)**. Its confusion matrix is 17 vector questions routed to vector, 15 graph questions routed to graph, and zero cross-route errors. The [machine-readable router result](evaluation/public_graphrag/published/router_results.json) records every decision and the SHA-256 identity of the gold-question file. These labels belong to the public development suite rather than an independently held-out set, so this result verifies the present routing rules; it is not a generalization claim.
 

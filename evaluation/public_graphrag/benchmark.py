@@ -346,6 +346,74 @@ def pending_manual_review() -> dict:
     }
 
 
+def write_json_atomic(path: Path, payload: dict) -> None:
+    """Write JSON through a sibling temporary file before replacing the target."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_suffix(f"{path.suffix}.tmp")
+    temporary_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    temporary_path.replace(path)
+
+
+def checkpoint_signature(
+    *,
+    model: str,
+    host: str,
+    top_k: int,
+    graph_max_depth: int,
+    relevance_threshold: float,
+    repetitions: int,
+    gold_questions_sha256: str,
+    source_hashes: dict[str, str],
+) -> dict:
+    """Return the inputs that must match before checkpoint rows can be reused."""
+
+    return {
+        "generation_model": model,
+        "ollama_host": host,
+        "embedding_model": "nomic-embed-text:latest",
+        "top_k": top_k,
+        "graph_max_depth": graph_max_depth,
+        "relevance_threshold": relevance_threshold,
+        "temperature": 0,
+        "seed": 42,
+        "repetitions_per_mode": repetitions,
+        "gold_questions_sha256": gold_questions_sha256,
+        "source_hashes": source_hashes,
+    }
+
+
+def load_checkpoint(path: Path, expected_signature: dict) -> list[dict]:
+    """Load validated completed rows from a previous interrupted run."""
+
+    if not path.is_file():
+        raise RuntimeError(f"Resume requested but checkpoint does not exist: {path}")
+
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("signature") != expected_signature:
+        raise RuntimeError(
+            "Checkpoint settings or source hashes do not match this run. "
+            "Use the original arguments or choose a new results directory."
+        )
+
+    rows = payload.get("questions")
+    if not isinstance(rows, list):
+        raise RuntimeError("Checkpoint questions must be a list.")
+    question_ids = [row.get("question_id") for row in rows]
+    if len(question_ids) != len(set(question_ids)):
+        raise RuntimeError("Checkpoint contains duplicate question IDs.")
+    return rows
+
+
+def cooldown(seconds: float, reason: str) -> None:
+    """Pause between sustained generation steps when cooling is requested."""
+
+    if seconds <= 0:
+        return
+    print(f"Cooling for {seconds:g} seconds ({reason})...", flush=True)
+    time.sleep(seconds)
+
+
 def run_router_benchmark(results_directory: Path) -> dict:
     """Measure the deterministic router without retrieval or generation models."""
 
@@ -381,9 +449,7 @@ def run_router_benchmark(results_directory: Path) -> dict:
         "questions": rows,
     }
     results_directory.mkdir(parents=True, exist_ok=True)
-    (results_directory / "router_results.json").write_text(
-        json.dumps(payload, indent=2), encoding="utf-8"
-    )
+    write_json_atomic(results_directory / "router_results.json", payload)
     return payload
 
 
@@ -396,12 +462,18 @@ def run_benchmark(
     graph_max_depth: int,
     relevance_threshold: float,
     repetitions: int = 3,
+    resume: bool = False,
+    cooldown_seconds: float = 0,
+    generation_cooldown_seconds: float = 0,
 ) -> dict:
     if repetitions <= 0:
         raise ValueError("repetitions must be greater than zero")
+    if cooldown_seconds < 0 or generation_cooldown_seconds < 0:
+        raise ValueError("cooldown values cannot be negative")
 
     sources = load_json(ROOT / "sources.json")
-    questions = load_json(ROOT / "gold_questions.json")
+    gold_path = ROOT / "gold_questions.json"
+    questions = load_json(gold_path)
     records = fetch_public_sources(sources, runtime_directory / "source_cache")
     embedding_service = OllamaEmbeddingService(model="nomic-embed-text:latest", host=host)
     store, chunk_metadata = build_vector_index(
@@ -419,14 +491,60 @@ def run_benchmark(
     graph = KnowledgeGraphStore(str(graph_path))
     KnowledgeGraphBuilder(graph).build_drug_discovery_workflow()
     router = RetrievalRouter(GraphRAGService._QUESTION_ENTITY_ALIASES)
-    generator = MeasuredGenerator(model=model, host=host)
-    generator.generate(
-        "Is this a benchmark warm-up?",
-        "This is a benchmark warm-up request.",
+    source_hashes = {
+        record["source_id"]: record["sha256"] for record in records
+    }
+    signature = checkpoint_signature(
+        model=model,
+        host=host,
+        top_k=top_k,
+        graph_max_depth=graph_max_depth,
+        relevance_threshold=relevance_threshold,
+        repetitions=repetitions,
+        gold_questions_sha256=hashlib.sha256(gold_path.read_bytes()).hexdigest(),
+        source_hashes=source_hashes,
     )
-    rows = []
+    checkpoint_path = results_directory / "benchmark_checkpoint.json"
+    rows = load_checkpoint(checkpoint_path, signature) if resume else []
+    completed_question_ids = {row["question_id"] for row in rows}
+    known_question_ids = {question["question_id"] for question in questions}
+    unknown_question_ids = completed_question_ids - known_question_ids
+    if unknown_question_ids:
+        raise RuntimeError(
+            "Checkpoint contains questions absent from the gold suite: "
+            f"{sorted(unknown_question_ids)}"
+        )
+
+    pending_questions = [
+        question
+        for question in questions
+        if question["question_id"] not in completed_question_ids
+    ]
+    if resume:
+        print(
+            f"Resuming with {len(rows)}/{len(questions)} questions complete; "
+            f"{len(pending_questions)} remain.",
+            flush=True,
+        )
+
+    generator = None
+    if pending_questions:
+        generator = MeasuredGenerator(model=model, host=host)
+        print("Warming the generation model...", flush=True)
+        generator.generate(
+            "Is this a benchmark warm-up?",
+            "This is a benchmark warm-up request.",
+        )
 
     for question_index, question in enumerate(questions):
+        if question["question_id"] in completed_question_ids:
+            continue
+
+        print(
+            f"Question {question_index + 1}/{len(questions)}: "
+            f"{question['question_id']}",
+            flush=True,
+        )
         router_decision = router.route(question["question"])
         retrieval_started = time.perf_counter()
         chunks = retrieval.search(
@@ -449,11 +567,17 @@ def run_benchmark(
             vector_first = (question_index + repetition) % 2 == 0
             order = ["vector", "graphrag"] if vector_first else ["graphrag", "vector"]
             generation_orders.append(order)
+            print(
+                f"  Repetition {repetition + 1}/{repetitions}: "
+                f"{' -> '.join(order)}",
+                flush=True,
+            )
 
             if vector_first:
                 vector_answer, vector_metrics = answer_vector_only(
                     question["question"], chunks, generator
                 )
+                cooldown(generation_cooldown_seconds, "between generations")
                 graph_result, graph_metrics = answer_with_graph(
                     question["question"], chunks, graph, generator, graph_max_depth
                 )
@@ -461,6 +585,7 @@ def run_benchmark(
                 graph_result, graph_metrics = answer_with_graph(
                     question["question"], chunks, graph, generator, graph_max_depth
                 )
+                cooldown(generation_cooldown_seconds, "between generations")
                 vector_answer, vector_metrics = answer_vector_only(
                     question["question"], chunks, generator
                 )
@@ -474,6 +599,8 @@ def run_benchmark(
                     "manual_review": pending_manual_review(),
                 }
             )
+            if repetition + 1 < repetitions:
+                cooldown(generation_cooldown_seconds, "between repetitions")
             graph_runs.append(
                 {
                     "repetition": repetition + 1,
@@ -516,6 +643,27 @@ def run_benchmark(
                 },
             }
         )
+        completed_question_ids.add(question["question_id"])
+        write_json_atomic(
+            checkpoint_path,
+            {
+                "signature": signature,
+                "completed_questions": len(rows),
+                "total_questions": len(questions),
+                "questions": rows,
+            },
+        )
+        print(
+            f"Checkpoint saved: {len(rows)}/{len(questions)} questions complete.",
+            flush=True,
+        )
+        if len(rows) < len(questions):
+            cooldown(cooldown_seconds, "between questions")
+
+    if len(rows) != len(questions):
+        raise RuntimeError(
+            f"Benchmark ended with {len(rows)}/{len(questions)} questions."
+        )
 
     payload = {
         "protocol": {
@@ -530,9 +678,7 @@ def run_benchmark(
             "questions": len(rows),
             "repetitions_per_mode": repetitions,
             "indexed_chunks": len(chunk_metadata),
-            "source_hashes": {
-                record["source_id"]: record["sha256"] for record in records
-            },
+            "source_hashes": source_hashes,
         },
         "summary": {
             "retrieval_source_recall": mean(
@@ -547,9 +693,7 @@ def run_benchmark(
     }
 
     results_directory.mkdir(parents=True, exist_ok=True)
-    (results_directory / "benchmark_results.json").write_text(
-        json.dumps(payload, indent=2), encoding="utf-8"
-    )
+    write_json_atomic(results_directory / "benchmark_results.json", payload)
     with (results_directory / "benchmark_summary.csv").open(
         "w", newline="", encoding="utf-8"
     ) as handle:
@@ -625,6 +769,23 @@ def main() -> None:
     parser.add_argument("--relevance-threshold", type=float, default=0.85)
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Continue from a compatible per-question checkpoint.",
+    )
+    parser.add_argument(
+        "--cooldown-seconds",
+        type=float,
+        default=0,
+        help="Pause after each completed question.",
+    )
+    parser.add_argument(
+        "--generation-cooldown-seconds",
+        type=float,
+        default=0,
+        help="Pause between generation calls and repetitions.",
+    )
+    parser.add_argument(
         "--router-only",
         action="store_true",
         help="Measure routing labels without downloading sources or using models.",
@@ -642,6 +803,9 @@ def main() -> None:
             graph_max_depth=arguments.graph_max_depth,
             relevance_threshold=arguments.relevance_threshold,
             repetitions=arguments.repetitions,
+            resume=arguments.resume,
+            cooldown_seconds=arguments.cooldown_seconds,
+            generation_cooldown_seconds=arguments.generation_cooldown_seconds,
         )
     print(json.dumps(payload["summary"], indent=2))
 
