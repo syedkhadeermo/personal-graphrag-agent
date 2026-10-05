@@ -141,6 +141,11 @@ class RetrievalService:
             [[]],
         )
 
+        ids = raw_results.get(
+            "ids",
+            [[]],
+        )
+
         if (
             not documents
             or not documents[0]
@@ -158,6 +163,12 @@ class RetrievalService:
         distances = (
             distances[0]
             if distances
+            else []
+        )
+
+        ids = (
+            ids[0]
+            if ids
             else []
         )
 
@@ -183,6 +194,14 @@ class RetrievalService:
                 else None
             )
 
+            chunk_id = (
+                ids[index]
+                if index < len(
+                    ids
+                )
+                else None
+            )
+
             if (
                 distance is not None
                 and distance
@@ -192,6 +211,7 @@ class RetrievalService:
 
             results.append(
                 {
+                    "id": chunk_id,
                     "text": text,
                     "metadata": metadata,
                     "distance": distance,

@@ -52,10 +52,10 @@ This is not a chat wrapper around a vector database. It separates retrieval, aut
 
 | Evidence | Result |
 |---|---:|
-| Portable CI suite | **91 passed, 15 skipped** |
+| Portable CI suite | **92 passed, 15 skipped** |
 | Ruff | **All checks passed** |
 | Deterministic router benchmark | **32/32 expected routes (100%)**; vector 17/17, graph 15/15 |
-| Expanded Vector RAG vs GraphRAG run | Pending a complete, manually reviewed run with the documented general model |
+| Controlled public benchmark | **32 questions, 192 reviewed answers**; router-selected path 77/96 fully supported |
 | CAD/CFD demo | FreeCAD → OpenFOAM → Blender workflow completed |
 | Structural FEA | CalculiX asynchronous execution path completed with return code 0 |
 | AWS portfolio deployment | 17 resources created, verified, drift-checked, and destroyed |
@@ -204,7 +204,23 @@ The runner reports router accuracy and a confusion matrix, retrieval source reca
 
 The deterministic router has been executed against all 32 expected-route labels: **32/32 correct (100%)**. Its confusion matrix is 17 vector questions routed to vector, 15 graph questions routed to graph, and zero cross-route errors. The [machine-readable router result](evaluation/public_graphrag/published/router_results.json) records every decision and the SHA-256 identity of the gold-question file. These labels belong to the public development suite rather than an independently held-out set, so this result verifies the present routing rules; it is not a generalization claim.
 
-The previously published six-question run is retained in [Verified workflows](docs/verified-workflows.md) as a clearly labelled historical pilot, not as evidence for a general performance claim. The expanded suite must be run and manually reviewed before new model-comparison numbers are published.
+The controlled `qwen3:8b` protocol-v2 run completed 192 generations with no
+empty answers. Automated claim-group coverage was **85.0%** for Vector RAG,
+**86.5%** for GraphRAG, and **88.6%** when each question used the route selected
+by the router. Mean generation latency was 4.69 s for Vector RAG and 4.76 s for
+GraphRAG.
+
+All answers were then reviewed against the retrieved public evidence. Under the
+published rubric, 69/96 Vector answers, 74/96 GraphRAG answers, and 77/96
+router-selected answers were fully supported. Vector was stronger on direct
+questions; GraphRAG's clearest gain was on boundary questions. Both modes made
+the same radius-of-gyration command error in one question across all three
+repetitions, and several cross-source answers were incomplete or unsupported.
+The [machine-readable audit](evaluation/public_graphrag/published/qwen3_8b_protocol_v2_audit.json)
+contains all 192 answers, per-run judgments, source identities, protocol
+settings, hashes, and limitations.
+
+The previously published six-question run is retained in [Verified workflows](docs/verified-workflows.md) as a clearly labelled historical pilot, not as evidence for a general performance claim.
 
 See the [benchmark methodology](evaluation/public_graphrag/README.md) for reproducibility and interpretation limits.
 

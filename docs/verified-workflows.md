@@ -17,7 +17,7 @@ The repository contains strong evidence for the first two levels and workflow-de
 
 The verified CI snapshot completed:
 
-- 91 passing tests
+- 92 passing tests
 - 15 skipped external tests
 - Ruff checks with no errors
 - Python 3.12 execution
@@ -36,6 +36,55 @@ The deterministic router was executed against the current 32-question public dev
 | Graph | 0 | **15** |
 
 Router accuracy was **32/32 (100%)**. The [machine-readable result](../evaluation/public_graphrag/published/router_results.json) preserves every decision and the SHA-256 identity of the gold-question file. Because the expected-route labels are part of the current development suite rather than an independently held-out dataset, this verifies the implemented routing rules but does not establish generalization to unseen questions.
+
+### Controlled 32-question run
+
+The protocol-v2 run used `qwen3:8b`, `nomic-embed-text:latest`, temperature 0,
+seed 42, three repetitions per mode, disabled model thinking, and a 512-token
+generation cap. All 192 generations completed with a normal stop reason and no
+empty answers.
+
+| Automated metric | Vector RAG | GraphRAG | Router-selected path |
+|---|---:|---:|---:|
+| Strict claim coverage | 65.1% | 66.1% | **71.4%** |
+| Claim-group coverage | 85.0% | 86.5% | **88.6%** |
+| Mean prompt tokens | **2,122** | 2,242 | 2,188 |
+| Mean answer tokens | 90.4 | 92.2 | **90.0** |
+| Mean generation latency | **4.69 s** | 4.76 s | 4.70 s |
+
+The category-level claim-group result explains the router benefit:
+
+| Category | Questions | Vector RAG | GraphRAG |
+|---|---:|---:|---:|
+| Direct | 17 | **95.1%** | 91.2% |
+| Cross-source | 10 | 76.2% | **76.9%** |
+| Boundary | 5 | 68.3% | **90.0%** |
+
+Every generated answer was manually compared with the retrieved evidence. The
+rubric classified an answer as fully supported only when it was materially
+correct, complete, and supported by the cited context.
+
+| Manual outcome | Vector RAG | GraphRAG | Router-selected path |
+|---|---:|---:|---:|
+| Fully supported | 69/96 | 74/96 | **77/96** |
+| Correct core, but partial | 9/96 | 7/96 | 4/96 |
+| Incomplete | 12/96 | 9/96 | 9/96 |
+| Unsupported central bridge | 3/96 | 3/96 | 3/96 |
+| Factually incorrect | 3/96 | 3/96 | 3/96 |
+
+The six incorrect answers are the same systematic error across both modes and
+three repetitions: `gmx rms` was named for radius of gyration instead of the
+documented `gmx gyrate`. Automatic lexical coverage also produced both false
+positives and false negatives, so it is reported as an audit aid rather than
+answer accuracy. The [machine-readable audit](../evaluation/public_graphrag/published/qwen3_8b_protocol_v2_audit.json)
+preserves all answers, judgments, evidence identities, aggregate metrics,
+source hashes, and review limitations.
+
+This result supports conditional routing within this small public development
+suite. It does not establish generalization, universal GraphRAG superiority, or
+scientific validity.
+
+### Historical pilot
 
 The following result is the original six-question pilot. It is retained for historical reproducibility and is not representative evidence for the current 32-question suite.
 

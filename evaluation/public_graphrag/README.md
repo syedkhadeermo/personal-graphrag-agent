@@ -101,6 +101,37 @@ Do not place private research documents in this benchmark. Do not publish a
 comparison table until the generated answers and claim-level scores have been
 manually reviewed.
 
+## Published controlled result
+
+The controlled protocol-v2 `qwen3:8b` run completed 32 questions, three
+repetitions, and both retrieval modes: 192 generated answers in total. Every
+answer stopped normally, no answer was empty, and the maximum recorded answer
+length stayed below the 512-token cap.
+
+| Metric | Vector RAG | GraphRAG | Router-selected path |
+|---|---:|---:|---:|
+| Strict claim coverage | 65.1% | 66.1% | **71.4%** |
+| Claim-group coverage | 85.0% | 86.5% | **88.6%** |
+| Mean latency | **4.69 s** | 4.76 s | 4.70 s |
+| Manually fully supported | 69/96 | 74/96 | **77/96** |
+
+The router-selected column uses the Vector answer for each direct question and
+the GraphRAG answer for each cross-source or boundary question. It reuses the
+same completed comparison runs; it is not a third generation pass.
+
+The manual review found six factually incorrect answers, all caused by the same
+command substitution across both modes and all repetitions: `gmx rms` was used
+for radius of gyration instead of `gmx gyrate`. It also found safe abstentions,
+incomplete API workflows, and unsupported RDKit-to-docking bridges that the
+lexical score alone does not reliably identify.
+
+The [machine-readable audit](published/qwen3_8b_protocol_v2_audit.json) contains
+all 192 generated answers, per-run review judgments, sanitized evidence
+identities, automated metrics, source hashes, artifact hashes, the review
+rubric, and interpretation limits. Retrieved documentation text is omitted from
+the published audit to avoid duplicating large source excerpts; source URL,
+source ID, chunk number, and distance are retained.
+
 ## Interpretation limits
 
 This is a transparent portfolio benchmark rather than a general claim that
